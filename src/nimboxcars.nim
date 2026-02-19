@@ -1,5 +1,15 @@
 #import nimboxcars/parser
-import std/[streams, encodings]
+import std/[streams, encodings, options]
+
+proc readPropertyName(s: Stream): Option[string] = 
+  let n = readString8(s)
+  if n == "None" or n == "\0\0\0None":
+    return none(string)
+  some(n)
+
+proc readBool8*(s: Stream): bool =
+  let b = readUint8(s)
+  b != 0'u8
 
 proc readU64(s: Stream): uint64 =
   ## Takes the file stream and reads the next 8 bytes as uint64
