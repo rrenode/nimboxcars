@@ -1,9 +1,27 @@
 import nimboxcars/parser
-
+import std/[parseopt, options]
 
 when isMainModule:
 
-  let replayPath = r"C:\Users\rober\Documents\My Games\Rocket League\TAGame\Demos\A2C1C2E14020B6A1F701D8957C8C87A7.replay"
-  #let replayPath = r"C:\Users\rober\Documents\My Games\Rocket League\TAGame\Demos\C83035FA11F10787A86F62987AC938C8.replay"
+  var replayFilePath: Option[string] = none(string)
+
+  for kind, key, val in getopt():
+    case kind:
+    of cmdArgument:
+      replayFilePath = some(key)
+    of cmdLongOption, cmdShortOption:
+      case key:
+      of "v", "verbose":
+        #TODO: Add verbose logging
+        continue
+      else:
+        echo "Unknown command option of `", key, "`"
+    of cmdEnd:
+      discard
   
-  discard parseReplay(replayPath)
+  if replayFilePath.isNone():
+    echo "Replay file path not provided!"
+    quit()
+
+  let replay = parseReplay(replayFilePath.get())
+  echo replay
