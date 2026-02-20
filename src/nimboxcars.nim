@@ -2,10 +2,53 @@
 import std/[streams, encodings, options, strformat]
 
 type
+  PropertyKind* = enum
+    pkInt, pkStr, pkBool, pkName, pkArray, pkBytes, pkQWord, pkFloat, pkStruct, pkUnknown
+
+  ByteValue* = object
+    kind*: string
+    value*: Option[string]
+
+  StructValue* = object
+    name*: string
+    fields*: Properties
+
+  PropertyValue* = object
+    case kind*: PropertyKind
+    of pkInt:     i*: int32
+    of pkFloat:   f*: float32
+    of pkBool:    b*: bool
+    of pkQWord:   q*: uint64
+    of pkStr, pkName:   s*: string
+    of pkBytes:   bytes*: ByteValue
+    of pkArray:   props*: seq[Properties]
+    of pkStruct:  st*: StructValue
+    of pkUnknown: raw*: string
+
   Property* = object
     name*:  string
     kind*:  string
-    val*:   string
+    value*: PropertyValue
+  
+  Properties* = seq[Property]
+
+proc readPropertiesUntilNone*(s: Stream): Properties
+proc readPropertyName*(s: Stream): Option[string]
+proc readArrayOfProperties*(s: Stream): seq[Properties]
+
+proc kindFromTypeString(t: string): PropertyKind =
+  case t
+  of "IntProperty": pkInt
+  of "StrProperty": pkStr
+  of "NameProperty": pkName
+  of "FloatProperty": pkFloat
+  of "ByteProperty": pkBytes
+  of "ArrayProperty": pkArray
+  of "QWordProperty": pkQWord
+  of "BoolProperty": pkBool
+  of "StructProperty": pkStruct
+  else:
+    pkUnknown
 
 proc readBool8*(s: Stream): bool =
   let b = readUint8(s)
@@ -69,11 +112,63 @@ proc readString8*(s: Stream): string =
 
   return result
 
+proc readByteProperty*(s: Stream): ByteValue =
+  let kind = readString8(s)
+  if kind == "None":
+    discard readUint8(s)
+    return ByteValue(kind: kind, value: none(string))
+  else:
+    return ByteValue(kind: kind, value: some(readString8(s)))
+
 proc readPropertyName*(s: Stream): Option[string] = 
   let n = readString8(s)
   if n == "None" or n == "\0\0\0None":
     return none(string)
-  some(n)
+  return some(n)
+
+proc readArrayOfProperties*(s: Stream): seq[Properties] =
+  let count = int(readU32(s))
+  result = newSeq[Properties](count)
+  for i in 0..<count:
+    result[i] = readPropertiesUntilNone(s)
+  return result
+
+proc readPropertiesUntilNone*(s: Stream): Properties =
+  result = @[]
+  while true:
+    let nameOpt = readPropertyName(s)
+    if nameOpt.isNone:
+      break
+    let propType = readString8(s)
+
+    let size = readU32(s) # Boxcars says not to rely on this!
+    discard readU64(s) # Unknown Prop Attribute
+
+    echo nameOpt, " || ", propType
+    
+    var propVal: PropertyValue
+    case propType:
+      of "IntProperty":
+        propVal = PropertyValue(kind: pkInt, i: readInt32(s))
+      of "StrProperty":
+        propVal = PropertyValue(kind: pkStr, s: readString16(s))
+      of "NameProperty":
+        propVal = PropertyValue(kind: pkName, s: readString16(s))
+      of "FloatProperty":
+        propVal = PropertyValue(kind: pkFloat, f: readFloat32(s))
+      of "ArrayProperty":
+        propVal = PropertyValue(kind: pkArray, props: readArrayOfProperties(s))
+      of "ByteProperty":
+        propVal = PropertyValue(kind: pkBytes, bytes: readByteProperty(s))
+      of "QWordProperty":
+        propVal = PropertyValue(kind: pkQWord, q: readU64(s))
+      of "BoolProperty":
+        propVal = PropertyValue(kind: pkBool, b: readBool8(s))
+      of "StructProperty":
+        let structName = readString8(s)
+        let fields = readPropertiesUntilNone(s)
+        propVal = PropertyValue(kind: pkStruct, st: StructValue(name: structName, fields: fields))
+    echo propVal
 
 when isMainModule:
 
@@ -91,35 +186,7 @@ when isMainModule:
     let minorVersion = readU32(f)
     let netVersion = readU32(f)
     let gameType = readString8(f)
+
     # Start props
     echo "Starting props..."
-    while true:
-      let propName = readPropertyName(f)
-      if propName == none(string):
-        break
-      
-      let propType = readString8(f)
-
-      # Unknown Prop Attribute
-      discard readU64(f)
-      echo propName
-      echo propType
-
-      case propType:
-      of "IntProperty":
-        echo readInt32(f)
-      of "StrProperty":
-        echo readString16(f)
-      of "NameProperty":
-        echo readString16(f)
-      of "FloatProperty":
-        echo readFloat32(f)
-      of "ArrayProperty":
-        echo "Array property ignored."
-      of "ByteProperty":
-        echo "Bytes property ignored."
-      of "QWordProperty":
-        echo readU64(f)
-      of "BoolProperty":
-        echo readBool(f)
-      echo "================="
+    discard readPropertiesUntilNone(f)
