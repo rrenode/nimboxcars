@@ -14,6 +14,12 @@ when isMainModule:
       of "v", "verbose":
         #TODO: Add verbose logging
         continue
+      of "j":
+        if val != "":
+          echo "The `-j` option is a flag!"
+          quit()
+        #TODO: Flag to output as JSON
+        continue
       else:
         echo "Unknown command option of `", key, "`"
     of cmdEnd:
