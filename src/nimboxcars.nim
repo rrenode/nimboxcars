@@ -127,11 +127,13 @@ proc readPropertyName*(s: Stream): Option[string] =
   return some(n)
 
 proc readArrayOfProperties*(s: Stream): seq[Properties] =
-  let count = int(readU32(s))
-  result = newSeq[Properties](count)
-  for i in 0..<count:
+  let size = int(readInt32(s))          # element count
+  if size < 0:
+    raise newException(ValueError, &"Negative ArrayProperty size: {size} at {s.getPosition()}")
+
+  result = newSeq[Properties](size)
+  for i in 0..<size:
     result[i] = readPropertiesUntilNone(s)
-  return result
 
 proc readPropertiesUntilNone*(s: Stream): Properties =
   result = @[]
@@ -141,8 +143,8 @@ proc readPropertiesUntilNone*(s: Stream): Properties =
       break
     let propType = readString8(s)
 
-    let size = readU32(s) # Boxcars says not to rely on this!
-    discard readU64(s) # Unknown Prop Attribute
+    discard readU32(s) # Boxcars says not to rely on this!
+    discard readU32(s) # Unknown Prop Attribute
 
     echo nameOpt, " || ", propType
     
