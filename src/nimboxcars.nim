@@ -1,7 +1,7 @@
 import std/[parseopt, options]
 import nimboxcars/parser
 
-export parseReplay
+export parseReplay, Replay, ReplayHeader
 
 when isMainModule:
 
