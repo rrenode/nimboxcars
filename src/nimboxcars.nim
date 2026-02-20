@@ -84,6 +84,9 @@ proc readString16*(s: Stream): string =
   var lenBytes: int =
     if n > 0: n
     else: n * -2
+  
+  if lenBytes <= 0:
+    return ""
 
   var raw = newString(lenBytes)
   if s.readData(addr raw[0], lenBytes) != lenBytes:
