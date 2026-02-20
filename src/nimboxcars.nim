@@ -12,13 +12,13 @@ proc readU64*(s: Stream): uint64 =
   if s.readData(addr b[0], 8) != 8:
     raise newException(IOError, &"EOF while reading u64 at index {pos}")
   result = uint64(b[0]) or
-  (uint32(b[1]) shl 8)  or 
-  (uint32(b[2]) shl 16) or 
-  (uint32(b[3]) shl 24) or
-  (uint32(b[4]) shl 32) or
-  (uint32(b[5]) shl 40) or
-  (uint32(b[6]) shl 48) or
-  (uint32(b[7]) shl 56)
+  (uint64(b[1]) shl 8)  or 
+  (uint64(b[2]) shl 16) or 
+  (uint64(b[3]) shl 24) or
+  (uint64(b[4]) shl 32) or
+  (uint64(b[5]) shl 40) or
+  (uint64(b[6]) shl 48) or
+  (uint64(b[7]) shl 56)
 
 proc readU32*(s: Stream): uint32 =
   ## Takes the file stream and reads the next 4 bytes as a uint32
@@ -55,11 +55,13 @@ proc readString8*(s: Stream): string =
   if s.readData(addr raw[0], n) != n:
     raise newException(IOError, &"EOF while reading string at index {pos}")
 
-  var endi = n
-  if endi > 0 and raw[endi-1] == 0'u8:
-    dec endi
+  let m = max(0, n - 1)
 
-  result = cast[string](raw[0..<endi])
+  result = newString(m)
+  if m > 0:
+    copyMem(addr result[0], unsafeAddr raw[0], m)
+
+  return result
 
 proc readPropertyName*(s: Stream): Option[string] = 
   let n = readString8(s)
@@ -89,9 +91,14 @@ when isMainModule:
       let propName = readPropertyName(f)
       if propName == none(string):
         break
-      echo propName
+      
       let propType = readString8(f)
+
+      # Unknown Prop Attribute
+      discard readU64(f)
+      echo propName
       echo propType
+
       case propType:
       of "IntProperty":
         echo readInt32(f)
