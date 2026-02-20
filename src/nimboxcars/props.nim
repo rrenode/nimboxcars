@@ -106,3 +106,4 @@ proc readPropertiesUntilNone*(s: Stream): Properties =
         let structName = readString8(s)
         let fields = readPropertiesUntilNone(s)
         propVal = PropertyValue(kind: pkStruct, st: StructValue(name: structName, fields: fields))
+    result.add(Property(name:nameOpt.get(), kind:propType, value:propVal))
