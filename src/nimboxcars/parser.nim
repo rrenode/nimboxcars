@@ -1,22 +1,35 @@
+## RL Replay Parser - Robert J Renode IV (Feb. 2026)
+## 
+## Instrumental in writing this was tanrbobanr's documentation of the RL replay binary structure.
+##  https://github.com/tanrbobanr/rocket-league-replay-format/blob/main/rpdoc_generated.md
+## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
+## Fun fact: Modern replay formats have StructProperty!
+import std/[streams]
+import props, primitives
+
 type
-  Properties* = object
-    teamSize*: int
-    unfairTeamSize*: int
+  ReplayHeader* = object
+    hSize*: uint32
+    headerCrc*: uint32
+    majorVersion*: uint32
+    minorVersion*: uint32
+    netVersion*: uint32
+    gameType*: string
+    props*: Properties
 
-  Header* = object
-    headerLength*: int32
-    headerCrc*: int32
-    version*: string
-    properties*: Properties
-    content_size*: int32
-    contentCrc*: int32
+  Replay* = object
+    header*: ReplayHeader
 
+proc parseReplay*(replayPath: string): Replay =
+  var f: FileStream = newFileStream(replayPath, fmRead)
+  if f.isNil:
+    raise newException(IOError, "Cannot open file: " & replayPath)
+  defer: f.close()
 
-proc parseHeader*(data: openArray[byte]): void =
-  var i = 0
-  for b in data:
-    let byteVal = ord(b)
-    echo byteVal
-    i += 1
-    if i > 5:
-      return
+  result.header.hSize = readU32(f)
+  result.header.headerCrc = readU32(f)
+  result.header.majorVersion = readU32(f)
+  result.header.minorVersion = readU32(f)
+  result.header.netVersion = readU32(f)
+  result.header.gameType = readString8(f)
+  result.header.props = readPropertiesUntilNone(f)
