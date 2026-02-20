@@ -2,3 +2,6 @@
 *.bin
 bin/*
 local/*
+nimble.develop
+nimble.paths
+nimbledeps

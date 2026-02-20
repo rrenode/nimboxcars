@@ -1,5 +1,7 @@
-import nimboxcars/parser
 import std/[parseopt, options]
+import nimboxcars/parser
+
+export parseReplay
 
 when isMainModule:
 
