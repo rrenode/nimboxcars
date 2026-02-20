@@ -1,6 +1,12 @@
 #import nimboxcars/parser
 import std/[streams, encodings, options, strformat]
 
+type
+  Property* = object
+    name*:  string
+    kind*:  string
+    val*:   string
+
 proc readBool8*(s: Stream): bool =
   let b = readUint8(s)
   b != 0'u8
