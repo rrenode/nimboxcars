@@ -7,6 +7,8 @@
 import std/[streams]
 import props, primitives
 
+export Properties
+
 type
   ReplayHeader* = object
     hSize*: uint32
