@@ -5,7 +5,7 @@
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
 ## Fun fact: Modern replay formats have StructProperty!
 import std/[streams]
-import props, primitives
+import body, props, primitives
 
 export Properties
 
@@ -18,11 +18,15 @@ type
     netVersion*: uint32
     gameType*: string
     props*: Properties
+  
+  ReplayBody* = object
     contentSize*: uint32
     contentCrc*: uint32
-
+    levels*: seq[string]
+  
   Replay* = object
     header*: ReplayHeader
+    body*: ReplayBody
 
 proc parseHeader*(s: Stream): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
@@ -33,8 +37,16 @@ proc parseHeader*(s: Stream): ReplayHeader =
   result.netVersion = readUint32Ctx(s, "header.netVersion")
   result.gameType = readString8Ctx(s, "header.gameType")
   result.props = readPropertiesUntilNone(s)
-  result.contentSize = readUint32Ctx(s, "header.contentSize")
-  result.contentCrc = readUint32Ctx(s, "header.contentCrc")
+
+proc parseBody*(s: Stream, skip_net: bool = true): ReplayBody =
+  ## Parse replay file stream into ReplayBody.
+  ## DOES NOT ACCOUNT FOR HEADER
+  result.contentSize = readUint32Ctx(s, "body.contentSize")
+  result.contentCrc = readUint32Ctx(s, "body.contentCrc")
+  result.levels = readTextList(s, "body.levels")
+  if skip_net:
+    s.setPosition(s.getPosition() + int(result.contentSize))
+    echo s.getPosition()
 
 proc parseHeader*(replayPath: string): ReplayHeader =
   ## Opens a replay file and parses its header into a ReplayHeader.
@@ -45,7 +57,7 @@ proc parseHeader*(replayPath: string): ReplayHeader =
 
   result = parseHeader(fs)
 
-proc parseReplay*(replayPath: string): Replay =
+proc parseReplay*(replayPath: string; skip_net: bool = true): Replay =
   ## Opens a replay file and parses it into a Replay.
   var fs: FileStream = newFileStream(replayPath, fmRead)
   if fs.isNil:
@@ -53,3 +65,4 @@ proc parseReplay*(replayPath: string): Replay =
   defer: fs.close()
 
   result.header = parseHeader(fs)
+  result.body = parseBody(fs)
