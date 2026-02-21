@@ -22,16 +22,30 @@ type
   Replay* = object
     header*: ReplayHeader
 
-proc parseReplay*(replayPath: string): Replay =
-  var f: FileStream = newFileStream(replayPath, fmRead)
-  if f.isNil:
-    raise newException(IOError, "Cannot open file: " & replayPath)
-  defer: f.close()
+proc parseHeader*(s: Stream): ReplayHeader =
+  ## Parse replay file stream into ReplayHeader.
+  result.hSize = readU32(s)
+  result.headerCrc = readU32(s)
+  result.majorVersion = readU32(s)
+  result.minorVersion = readU32(s)
+  result.netVersion = readU32(s)
+  result.gameType = readString8(s)
+  result.props = readPropertiesUntilNone(s)
 
-  result.header.hSize = readU32(f)
-  result.header.headerCrc = readU32(f)
-  result.header.majorVersion = readU32(f)
-  result.header.minorVersion = readU32(f)
-  result.header.netVersion = readU32(f)
-  result.header.gameType = readString8(f)
-  result.header.props = readPropertiesUntilNone(f)
+proc parseHeader*(replayPath: string): ReplayHeader =
+  ## Opens a replay file and parses its header into a ReplayHeader.
+  var fs: FileStream = newFileStream(replayPath, fmRead)
+  if fs.isNil:
+    raise newException(IOError, "Cannot open file: " & replayPath)
+  defer: fs.close()
+
+  result = parseHeader(fs)
+
+proc parseReplay*(replayPath: string): Replay =
+  ## Opens a replay file and parses it into a Replay.
+  var fs: FileStream = newFileStream(replayPath, fmRead)
+  if fs.isNil:
+    raise newException(IOError, "Cannot open file: " & replayPath)
+  defer: fs.close()
+
+  result.header = parseHeader(fs)
