@@ -1,3 +1,8 @@
+## Binary decoding from stream for fixed-width types.
+## Nim's built-ins are not equivalent as they use the native endianness of the machine.
+## And to my knowledge, all Rocket League replays should be little endian. 
+## Thus, the existence of these procs and their utility over Nim's built-ins.
+
 import std/[streams, encodings, strformat]
 
 proc readBool8*(s: Stream): bool =
@@ -5,7 +10,9 @@ proc readBool8*(s: Stream): bool =
   b != 0'u8
 
 proc readU64*(s: Stream): uint64 =
-  ## Takes the file stream and reads the next 8 bytes as uint64
+  ## Takes the file stream and reads a uint64.
+  ## Raises `IOError` if error occurred.
+  ## Error provides byte index position.
   let pos = s.getPosition()
   var b: array[8, byte]
   if s.readData(addr b[0], 8) != 8:
@@ -20,7 +27,9 @@ proc readU64*(s: Stream): uint64 =
   (uint64(b[7]) shl 56)
 
 proc readU32*(s: Stream): uint32 =
-  ## Takes the file stream and reads the next 4 bytes as a uint32
+  ## Takes the file stream and reads a uint32. 
+  ## Raises `IOError` if error occurred.
+  ## Error provides byte index position.
   let pos = s.getPosition()
   var b: array[4, byte]
   if s.readData(addr b[0], 4) != 4:
@@ -29,8 +38,13 @@ proc readU32*(s: Stream): uint32 =
 
 proc readString16*(s: Stream): string =
   ## Takes the file stream and reads bytes as a string; encoding as either utf-16 or Windows-1252
+  ## Raises ValueError for when text is too large.
+  ## Raises IOError on other exceptions occurances.
+  ## 
   ## <0 => UTF-16LE, bytes = -characters * 2, includes 2-byte NUL
   ## >=0 => Windows-1252, bytes = characters, includes 1-byte NUL
+  ## 
+  # I might of messed this up? But there's no error. Soemthing just feels wrong.
   let pos = s.getPosition()
   let characters = readInt32(s)
 
@@ -66,7 +80,8 @@ proc readString16*(s: Stream): string =
     return encodings.convert(raw, "UTF-8", "CP1252")
 
 proc readString8*(s: Stream): string =
-  ## Takes the file stream and reads bytes as string utf-8
+  ## Readers UE3 string8 from stream.
+  ## Raises `IOError` if error occurred.
   let pos = s.getPosition()
   let n = int(readU32(s))
 
