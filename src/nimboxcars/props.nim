@@ -32,9 +32,9 @@ type
   
   Properties* = seq[Property]
 
-proc readPropertiesUntilNone*(s: Stream): Properties
-proc readPropertyName*(s: Stream): Option[string]
-proc readArrayOfProperties*(s: Stream): seq[Properties]
+proc readPropertiesUntilNone*(s: Stream; what: string = "header"): Properties
+proc readPropertyName*(s: Stream; what: string = "propName"): Option[string]
+proc readArrayOfProperties*(s: Stream; what: string = "arrayProp"): seq[Properties]
 
 proc kindFromTypeString*(t: string): PropertyKind =
   case t:
@@ -50,60 +50,60 @@ proc kindFromTypeString*(t: string): PropertyKind =
   else:
     pkUnknown
 
-proc readByteProperty*(s: Stream): ByteValue =
-  let kind = readString8(s)
+proc readByteProperty*(s: Stream; what = "byteProp"): ByteValue =
+  let kind = readString8Ctx(s, what)
   if kind == "None":
     discard readUint8(s)
     return ByteValue(kind: kind, value: none(string))
   else:
-    return ByteValue(kind: kind, value: some(readString8(s)))
+    return ByteValue(kind: kind, value: some(readString8Ctx(s, what)))
 
-proc readPropertyName*(s: Stream): Option[string] = 
-  let n = readString8(s)
+proc readPropertyName*(s: Stream; what = "propName"): Option[string] = 
+  let n = readString8Ctx(s, what)
   if n == "None" or n == "\0\0\0None":
     return none(string)
   return some(n)
 
-proc readArrayOfProperties*(s: Stream): seq[Properties] =
-  let size = int(readInt32(s))
+proc readArrayOfProperties*(s: Stream; what: string = "arrayProp"): seq[Properties] =
+  let size = int(readInt32Ctx(s, what))
   if size < 0:
     raise newException(ValueError, &"Negative ArrayProperty size: {size} at {s.getPosition()}")
 
   result = newSeq[Properties](size)
   for i in 0..<size:
-    result[i] = readPropertiesUntilNone(s)
+    result[i] = readPropertiesUntilNone(s, what)
 
-proc readPropertiesUntilNone*(s: Stream): Properties =
+proc readPropertiesUntilNone*(s: Stream; what: string = "header"): Properties =
   result = @[]
   while true:
-    let nameOpt = readPropertyName(s)
+    let nameOpt = readPropertyName(s, what)
     if nameOpt.isNone:
       break
-    let propType = readString8(s)
+    let propType = readString8Ctx(s, &"{what}.{nameOpt}.propType")
 
-    discard readU32(s) # Boxcars says not to rely on this!
-    discard readU32(s) # Unknown Prop Attribute
+    discard readUint32Ctx(s) # Boxcars says not to rely on this!
+    discard readUint32Ctx(s) # Unknown Prop Attribute
     
     var propVal: PropertyValue
     case propType:
       of "IntProperty":
-        propVal = PropertyValue(kind: pkInt, i: readInt32(s))
+        propVal = PropertyValue(kind: pkInt, i: readInt32Ctx(s, &"{what}.{nameOpt}"))
       of "StrProperty":
-        propVal = PropertyValue(kind: pkStr, s: readString16(s))
+        propVal = PropertyValue(kind: pkStr, s: readString16Ctx(s, &"{what}.{nameOpt}"))
       of "NameProperty":
-        propVal = PropertyValue(kind: pkName, s: readString16(s))
+        propVal = PropertyValue(kind: pkName, s: readString16Ctx(s, &"{what}.{nameOpt}"))
       of "FloatProperty":
-        propVal = PropertyValue(kind: pkFloat, f: readFloat32(s))
+        propVal = PropertyValue(kind: pkFloat, f: readFloat32Ctx(s, &"{what}.{nameOpt}"))
       of "ArrayProperty":
-        propVal = PropertyValue(kind: pkArray, props: readArrayOfProperties(s))
+        propVal = PropertyValue(kind: pkArray, props: readArrayOfProperties(s, &"{what}.{nameOpt}"))
       of "ByteProperty":
-        propVal = PropertyValue(kind: pkBytes, bytes: readByteProperty(s))
+        propVal = PropertyValue(kind: pkBytes, bytes: readByteProperty(s, &"{what}.{nameOpt}"))
       of "QWordProperty":
-        propVal = PropertyValue(kind: pkQWord, q: readU64(s))
+        propVal = PropertyValue(kind: pkQWord, q: readUint64Ctx(s, &"{what}.{nameOpt}"))
       of "BoolProperty":
-        propVal = PropertyValue(kind: pkBool, b: readBool8(s))
+        propVal = PropertyValue(kind: pkBool, b: readBool8Ctx(s, &"{what}.{nameOpt}"))
       of "StructProperty":
-        let structName = readString8(s)
-        let fields = readPropertiesUntilNone(s)
+        let structName = readString8Ctx(s, &"{what}.{nameOpt}")
+        let fields = readPropertiesUntilNone(s, &"{what}.{nameOpt}.{structName}")
         propVal = PropertyValue(kind: pkStruct, st: StructValue(name: structName, fields: fields))
     result.add(Property(name:nameOpt.get(), kind:propType, value:propVal))

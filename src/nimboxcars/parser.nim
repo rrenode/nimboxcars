@@ -24,12 +24,12 @@ type
 
 proc parseHeader*(s: Stream): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
-  result.hSize = readU32(s)
-  result.headerCrc = readU32(s)
-  result.majorVersion = readU32(s)
-  result.minorVersion = readU32(s)
-  result.netVersion = readU32(s)
-  result.gameType = readString8(s)
+  result.hSize = readUint32Ctx(s, "header.hSize")
+  result.headerCrc = readUint32Ctx(s, "header.crc")
+  result.majorVersion = readUint32Ctx(s, "header.majorVersion")
+  result.minorVersion = readUint32Ctx(s, "header.minorVersion")
+  result.netVersion = readUint32Ctx(s, "header.netVersion")
+  result.gameType = readString8Ctx(s, "header.gameType")
   result.props = readPropertiesUntilNone(s)
 
 proc parseHeader*(replayPath: string): ReplayHeader =

@@ -1,42 +1,109 @@
-## Binary decoding from stream for fixed-width types.
+## Binary decoding from stream for fixed-width types as wrappers of Nim std/streams built-ins.
+## 
+## 
+## ==== WHY ====
 ## Nim's built-ins are not equivalent as they use the native endianness of the machine.
 ## And to my knowledge, all Rocket League replays should be little endian. 
 ## Thus, the existence of these procs and their utility over Nim's built-ins.
 
-import std/[streams, encodings, strformat]
+import std/[streams, encodings, strformat, endians]
 
-proc readBool8*(s: Stream): bool =
-  let b = readUint8(s)
+proc readInt8Ctx*(s: Stream, what = "int8"): int8 =
+  ## Takes the file stream and reads `int8`.
+  ## Raises `IOError` is error occurred.
+  ## Uses `what` for error message.
+  var pos: int = s.getPosition()
+  try:
+    var x = readInt8(s)
+    when cpuEndian == bigEndian:
+      x = swapEndian8(x)
+    result = x
+  except IOError as e:
+    raise newException(IOError,  &"EOF while reading {what} at offset {pos}: {e.msg}")
+
+proc readInt32Ctx*(s: Stream, what = "int32"): int32 =
+  ## Takes the file stream and reads `int32`.
+  ## Raises `IOError` is error occurred.
+  ## Uses `what` for error message.
+  var pos: int = s.getPosition()
+  try:
+    var x = readInt32(s)
+    when cpuEndian == bigEndian:
+      x = swapEndian32(x)
+    result = x
+  except IOError as e:
+    raise newException(IOError,  &"EOF while reading {what} at offset {pos}: {e.msg}")
+
+proc readInt64Ctx*(s: Stream, what = "int64"): int64 =
+  ## Takes the file stream and reads `int64`.
+  ## Raises `IOError` is error occurred.
+  ## Uses `what` for error message.
+  var pos: int = s.getPosition()
+  try:
+    var x = readInt64(s)
+    when cpuEndian == bigEndian:
+      x = swapEndian64(x)
+    result = x
+  except IOError as e:
+    raise newException(IOError, &"EOF while reading {what} at offset {pos}: {e.msg}")
+
+proc readUint8Ctx*(s: Stream, what = "uint8"): uint8 =
+  ## Takes the file stream and reads `uint8`.
+  ## Raises `IOError` is error occurred.
+  ## Uses `what` for error message.
+  var pos: int = s.getPosition()
+  try:
+    var x = readUint8(s)
+    when cpuEndian == bigEndian:
+      x = swapEndian8(x)
+    result = x
+  except IOError as e:
+    raise newException(IOError,  &"EOF while reading {what} at offset {pos}: {e.msg}")
+
+proc readUint32Ctx*(s: Stream, what = "uint32"): uint32 =
+  ## Takes the file stream and reads `uint32`.
+  ## Raises `IOError` is error occurred.
+  ## Uses `what` for error message.
+  var pos: int = s.getPosition()
+  try:
+    var x = readUint32(s)
+    when cpuEndian == bigEndian:
+      x = swapEndian32(x)
+    result = x
+  except IOError as e:
+    raise newException(IOError,  &"EOF while reading {what} at offset {pos}: {e.msg}")
+
+proc readUint64Ctx*(s: Stream, what = "uint64"): uint64 =
+  ## Takes the file stream and reads `int64`.
+  ## Raises `IOError` is error occurred.
+  ## Uses `what` for error message.
+  var pos: int = s.getPosition()
+  try:
+    var x: uint64 = readUint64(s)
+    when cpuEndian == bigEndian:
+      x = swapEndian64(x)
+    result = x
+  except IOError as e:
+    raise newException(IOError, &"EOF while reading {what} at offset {pos}: {e.msg}")
+
+proc readBool8Ctx*(s: Stream, what = "bool8"): bool =
+  let b = readUint8Ctx(s, what)
   b != 0'u8
 
-proc readU64*(s: Stream): uint64 =
-  ## Takes the file stream and reads a uint64.
-  ## Raises `IOError` if error occurred.
-  ## Error provides byte index position.
-  let pos = s.getPosition()
-  var b: array[8, byte]
-  if s.readData(addr b[0], 8) != 8:
-    raise newException(IOError, &"EOF while reading u64 at index {pos}")
-  result = uint64(b[0]) or
-  (uint64(b[1]) shl 8)  or 
-  (uint64(b[2]) shl 16) or 
-  (uint64(b[3]) shl 24) or
-  (uint64(b[4]) shl 32) or
-  (uint64(b[5]) shl 40) or
-  (uint64(b[6]) shl 48) or
-  (uint64(b[7]) shl 56)
+proc readFloat32Ctx*(s: Stream, what = "float32"): float32 = 
+  ## Takes the file stream and reads `float32`.
+  ## Raises `IOError` is error occurred.
+  ## Uses `what` for error message.
+  var pos: int = s.getPosition()
+  try:
+    var x: float = readFloat32(s)
+    when cpuEndian == bigEndian:
+      x = swapEndian64(x)
+    result = x
+  except IOError as e:
+    raise newException(IOError, &"EOF while reading {what} at offset {pos}: {e.msg}")
 
-proc readU32*(s: Stream): uint32 =
-  ## Takes the file stream and reads a uint32. 
-  ## Raises `IOError` if error occurred.
-  ## Error provides byte index position.
-  let pos = s.getPosition()
-  var b: array[4, byte]
-  if s.readData(addr b[0], 4) != 4:
-    raise newException(IOError, &"EOF while reading u32 at index {pos}")
-  result = uint32(b[0]) or (uint32(b[1]) shl 8) or (uint32(b[2]) shl 16) or (uint32(b[3]) shl 24)
-
-proc readString16*(s: Stream): string =
+proc readString16Ctx*(s: Stream, what = "string16"): string =
   ## Takes the file stream and reads bytes as a string; encoding as either utf-16 or Windows-1252
   ## Raises ValueError for when text is too large.
   ## Raises IOError on other exceptions occurances.
@@ -46,10 +113,10 @@ proc readString16*(s: Stream): string =
   ## 
   # I might of messed this up? But there's no error. Soemthing just feels wrong.
   let pos = s.getPosition()
-  let characters = readInt32(s)
+  let characters = readInt32Ctx(s, what)
 
   if characters < -10_000'i32 or characters > 10_000'i32:
-    raise newException(ValueError, &"TextTooLarge({characters}) at index {pos}")
+    raise newException(ValueError, &"TextTooLarge({characters}) at index {pos} while reading {what}")
   
   if characters < 0'i32:
     let size = int(-characters) * 2
@@ -57,7 +124,7 @@ proc readString16*(s: Stream): string =
 
     var raw = newString(size)
     if s.readData(addr raw[0], size) != size:
-      raise newException(IOError, &"EOF while reading text(utf16) at index {pos}")
+      raise newException(IOError, &"EOF while reading text(utf16) at index {pos} while reading {what}")
 
     # drop UTF-16 terminator if present
     if raw.len >= 2 and raw[^1] == '\0' and raw[^2] == '\0':
@@ -71,7 +138,7 @@ proc readString16*(s: Stream): string =
 
     var raw = newString(size)
     if s.readData(addr raw[0], size) != size:
-      raise newException(IOError, &"EOF while reading text(cp1252) at index {pos}")
+      raise newException(IOError, &"EOF while reading text(cp1252) at index {pos} while reading {what}")
 
     if raw.len > 0 and raw[^1] == '\0':
       raw.setLen(raw.len - 1)
@@ -79,11 +146,11 @@ proc readString16*(s: Stream): string =
     # Convert Windows-1252 bytes to UTF-8 string
     return encodings.convert(raw, "UTF-8", "CP1252")
 
-proc readString8*(s: Stream): string =
+proc readString8Ctx*(s: Stream, what = "string8"): string =
   ## Readers UE3 string8 from stream.
   ## Raises `IOError` if error occurred.
   let pos = s.getPosition()
-  let n = int(readU32(s))
+  let n = int(readUint32Ctx(s, what))
 
   let m = n - 1
   if n <= 0: return ""
@@ -91,9 +158,9 @@ proc readString8*(s: Stream): string =
   result = newString(m)
   if m > 0:
     if s.readData(addr result[0], m) != m:
-      raise newException(IOError, &"EOF while reading string at index {pos}")
+      raise newException(IOError, &"EOF while reading string at index {pos} while reading {what}")
 
   var nul: byte
 
   if s.readData(addr nul, 1) != 1:
-    raise newException(IOError, &"EOF while reading string terminator at index {pos}")
+    raise newException(IOError, &"EOF while reading string terminator at index {pos} while reading {what}")
