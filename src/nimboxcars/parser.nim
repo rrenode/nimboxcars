@@ -23,6 +23,7 @@ type
     contentSize*: uint32
     contentCrc*: uint32
     levels*: seq[string]
+    keyFrames*: seq[KeyFrame]
   
   Replay* = object
     header*: ReplayHeader
@@ -44,6 +45,7 @@ proc parseBody*(s: Stream, skip_net: bool = true): ReplayBody =
   result.contentSize = readUint32Ctx(s, "body.contentSize")
   result.contentCrc = readUint32Ctx(s, "body.contentCrc")
   result.levels = readTextList(s, "body.levels")
+  result.keyFrames = readKeyFrameList(s, "body.keyFrames")
   if skip_net:
     s.setPosition(s.getPosition() + int(result.contentSize))
     echo s.getPosition()

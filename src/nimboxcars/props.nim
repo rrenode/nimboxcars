@@ -65,12 +65,12 @@ proc readPropertyName*(s: Stream; what = "propName"): Option[string] =
   return some(n)
 
 proc readArrayOfProperties*(s: Stream; what: string = "arrayProp"): seq[Properties] =
-  let size = int(readInt32Ctx(s, what))
-  if size < 0:
-    raise newException(ValueError, &"Negative ArrayProperty size: {size} at {s.getPosition()}")
+  let count = int(readInt32Ctx(s, what))
+  if count < 0:
+    raise newException(ValueError, &"Negative ArrayProperty size: {count} at {s.getPosition()}")
 
-  result = newSeq[Properties](size)
-  for i in 0..<size:
+  result = newSeq[Properties](count)
+  for i in 0..<count:
     result[i] = readPropertiesUntilNone(s, what)
 
 proc readPropertiesUntilNone*(s: Stream; what: string = "header"): Properties =
