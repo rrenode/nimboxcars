@@ -11,7 +11,7 @@ export Properties
 
 type
   ReplayHeader* = object
-    hSize*: uint32
+    hSize*: int32
     headerCrc*: uint32
     majorVersion*: uint32
     minorVersion*: uint32
@@ -20,10 +20,11 @@ type
     props*: Properties
   
   ReplayBody* = object
-    contentSize*: uint32
+    contentSize*: int32
     contentCrc*: uint32
     levels*: seq[string]
     keyFrames*: seq[KeyFrame]
+    networkSize*: int32
   
   Replay* = object
     header*: ReplayHeader
@@ -31,7 +32,7 @@ type
 
 proc parseHeader*(s: Stream): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
-  result.hSize = readUint32Ctx(s, "header.hSize")
+  result.hSize = readInt32Ctx(s, "header.hSize")
   result.headerCrc = readUint32Ctx(s, "header.crc")
   result.majorVersion = readUint32Ctx(s, "header.majorVersion")
   result.minorVersion = readUint32Ctx(s, "header.minorVersion")
@@ -42,7 +43,7 @@ proc parseHeader*(s: Stream): ReplayHeader =
 proc parseBody*(s: Stream, skip_net: bool = true): ReplayBody =
   ## Parse replay file stream into ReplayBody.
   ## DOES NOT ACCOUNT FOR HEADER
-  result.contentSize = readUint32Ctx(s, "body.contentSize")
+  result.contentSize = readInt32Ctx(s, "body.contentSize")
   result.contentCrc = readUint32Ctx(s, "body.contentCrc")
   result.levels = readTextList(s, "body.levels")
   result.keyFrames = readKeyFrameList(s, "body.keyFrames")
