@@ -69,16 +69,16 @@ proc readString8*(s: Stream): string =
   ## Takes the file stream and reads bytes as string utf-8
   let pos = s.getPosition()
   let n = int(readU32(s))
+
+  let m = n - 1
   if n <= 0: return ""
-
-  var raw = newSeq[byte](n)
-  if s.readData(addr raw[0], n) != n:
-    raise newException(IOError, &"EOF while reading string at index {pos}")
-
-  let m = max(0, n - 1)
 
   result = newString(m)
   if m > 0:
-    copyMem(addr result[0], unsafeAddr raw[0], m)
+    if s.readData(addr result[0], m) != m:
+      raise newException(IOError, &"EOF while reading string at index {pos}")
 
-  return result
+  var nul: byte
+
+  if s.readData(addr nul, 1) != 1:
+    raise newException(IOError, &"EOF while reading string terminator at index {pos}")
