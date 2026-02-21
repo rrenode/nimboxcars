@@ -6,7 +6,7 @@
 ## And to my knowledge, all Rocket League replays should be little endian. 
 ## Thus, the existence of these procs and their utility over Nim's built-ins.
 
-import std/[streams, encodings, strformat, endians]
+import std/[streams, encodings, strformat]
 
 proc readInt8Ctx*(s: Stream, what = "int8"): int8 =
   ## Takes the file stream and reads `int8`.
