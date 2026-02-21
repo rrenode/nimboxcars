@@ -11,7 +11,7 @@
 </p>
 
 # NimBoxCars
-NimBoxCars is a [Rocket League](http://www.rocketleaguegame.com/) replay parser library  in Nim.
+NimBoxCars is a [Rocket League](http://www.rocketleaguegame.com/) replay parser library in Nim.
 
 
 ## Roadmap
@@ -41,8 +41,6 @@ As a **lib**, NimBoxCars provides object types (most notably the Replay object).
 In terms of **parsing**, the entire header, including the header's properties, are parsed and serialized as NimBoxCar's object types.
 
 As a **CLI**, it only outputs the string representation of NimBoxCar's Replay object type.
-
-Please see the Roadmap below for more information on what's ahead.
 
 
 # A HUGE THANK YOU TO
