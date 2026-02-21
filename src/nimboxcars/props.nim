@@ -65,7 +65,7 @@ proc readPropertyName*(s: Stream): Option[string] =
   return some(n)
 
 proc readArrayOfProperties*(s: Stream): seq[Properties] =
-  let size = int(readInt32(s))          # element count
+  let size = int(readInt32(s))
   if size < 0:
     raise newException(ValueError, &"Negative ArrayProperty size: {size} at {s.getPosition()}")
 
