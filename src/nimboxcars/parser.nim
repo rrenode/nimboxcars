@@ -18,6 +18,8 @@ type
     netVersion*: uint32
     gameType*: string
     props*: Properties
+    contentSize*: uint32
+    contentCrc*: uint32
 
   Replay* = object
     header*: ReplayHeader
@@ -31,6 +33,8 @@ proc parseHeader*(s: Stream): ReplayHeader =
   result.netVersion = readUint32Ctx(s, "header.netVersion")
   result.gameType = readString8Ctx(s, "header.gameType")
   result.props = readPropertiesUntilNone(s)
+  result.contentSize = readUint32Ctx(s, "header.contentSize")
+  result.contentCrc = readUint32Ctx(s, "header.contentCrc")
 
 proc parseHeader*(replayPath: string): ReplayHeader =
   ## Opens a replay file and parses its header into a ReplayHeader.
