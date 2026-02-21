@@ -6,6 +6,11 @@ type
     time*: float32
     frame*: int32
     position*: int32
+  
+  DebugInfo* = object
+    frame*: int32
+    user*: string
+    text*: string
 
 proc readTextList*(s: Stream; what = "textList"): seq[string] =
   ##
@@ -27,3 +32,17 @@ proc readKeyFrameList*(s: Stream; what = "keyFrameList"): seq[KeyFrame] =
 
   for i in 0..<count:
     result[i] = readKeyFrame(s, &"{what}.keyFrameList.{i}")
+
+proc readDebugInfo*(s: Stream; what = "debugInfo"): DebugInfo =
+  ##
+  result.frame = readInt32Ctx(s, &"{what}.debugInfo.frame")
+  result.user = readString16Ctx(s, &"{what}.debugInfo.user")
+  result.text = readString16Ctx(s, &"{what}.debugInfo.text")
+
+proc readDebugInfoList*(s: Stream; what = "debugInfoList"): seq[DebugInfo] =
+  ##
+  let count = readInt32Ctx(s, &"{what}.debugInfoList.count")
+  result = newSeq[DebugInfo](count)
+
+  for i in 0..<count:
+    result[i] = readDebugInfo(s, &"{what}.debugInfoList.{i}")

@@ -4,12 +4,15 @@
 ##  https://github.com/tanrbobanr/rocket-league-replay-format/blob/main/rpdoc_generated.md
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
 ## Fun fact: Modern replay formats have StructProperty!
-import std/[streams]
+import std/[streams, options]
 import body, props, primitives
 
 export Properties
 
 type
+  NetworkDataParse = enum
+    skipDeserial, skipParsing, getAll
+
   ReplayHeader* = object
     hSize*: int32
     headerCrc*: uint32
@@ -25,6 +28,8 @@ type
     levels*: seq[string]
     keyFrames*: seq[KeyFrame]
     networkSize*: int32
+    networkData*: seq[byte]
+    debugInfo*: seq[DebugInfo]
   
   Replay* = object
     header*: ReplayHeader
@@ -40,16 +45,24 @@ proc parseHeader*(s: Stream): ReplayHeader =
   result.gameType = readString8Ctx(s, "header.gameType")
   result.props = readPropertiesUntilNone(s)
 
-proc parseBody*(s: Stream, skip_net: bool = true): ReplayBody =
+proc parseBody*(s: Stream, netData: NetworkDataParse = NetworkDataParse.skipParsing): ReplayBody =
   ## Parse replay file stream into ReplayBody.
   ## DOES NOT ACCOUNT FOR HEADER
   result.contentSize = readInt32Ctx(s, "body.contentSize")
   result.contentCrc = readUint32Ctx(s, "body.contentCrc")
   result.levels = readTextList(s, "body.levels")
   result.keyFrames = readKeyFrameList(s, "body.keyFrames")
-  if skip_net:
-    s.setPosition(s.getPosition() + int(result.contentSize))
-    echo s.getPosition()
+  result.networkSize = readInt32Ctx(s, "body.networkSize")
+  case netData:
+  of NetworkDataParse.skipDeserial:
+    var networkData = newSeq[byte](result.networkSize)
+    discard s.readData(addr networkData[0], result.networkSize)
+    result.networkData = networkData
+  of NetworkDataParse.skipParsing:
+    s.setPosition(s.getPosition() + int(result.networkSize))
+  of NetworkDataParse.getAll:
+    echo "Network parsing is not yet completed. Skipping!"
+    s.setPosition(s.getPosition() + int(result.networkSize))
 
 proc parseHeader*(replayPath: string): ReplayHeader =
   ## Opens a replay file and parses its header into a ReplayHeader.
@@ -60,7 +73,7 @@ proc parseHeader*(replayPath: string): ReplayHeader =
 
   result = parseHeader(fs)
 
-proc parseReplay*(replayPath: string; skip_net: bool = true): Replay =
+proc parseReplay*(replayPath: string; netData: NetworkDataParse = NetworkDataParse.skipParsing): Replay =
   ## Opens a replay file and parses it into a Replay.
   var fs: FileStream = newFileStream(replayPath, fmRead)
   if fs.isNil:
