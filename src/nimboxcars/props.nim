@@ -32,7 +32,7 @@ type
   
   Properties* = seq[Property]
 
-proc readPropertiesUntilNone*(s: Stream; what: string = "header"): Properties
+proc readPropertiesUntilNone*(s: Stream; what: string = "header.properties"): Properties
 proc readPropertyName*(s: Stream; what: string = "propName"): Option[string]
 proc readArrayOfProperties*(s: Stream; what: string = "arrayProp"): seq[Properties]
 
@@ -73,7 +73,7 @@ proc readArrayOfProperties*(s: Stream; what: string = "arrayProp"): seq[Properti
   for i in 0..<count:
     result[i] = readPropertiesUntilNone(s, what)
 
-proc readPropertiesUntilNone*(s: Stream; what: string = "header"): Properties =
+proc readPropertiesUntilNone*(s: Stream; what: string = "header.properties"): Properties =
   result = @[]
   while true:
     let nameOpt = readPropertyName(s, what)
