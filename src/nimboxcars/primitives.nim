@@ -1,12 +1,13 @@
 ## Binary decoding from stream for fixed-width types as wrappers of Nim std/streams built-ins.
-## 
-## 
-## ==== WHY ====
-## Nim's built-ins are not equivalent as they use the native endianness of the machine.
-## And to my knowledge, all Rocket League replays should be little endian. 
-## Thus, the existence of these procs and their utility over Nim's built-ins.
 
 import std/[streams, encodings, strformat]
+
+type
+  String8* = string
+  String16* = string
+
+proc read*[T](t: typedesc[T], s: Stream; what: string): T {.inline.} =
+  {.error: "No read(typedesc[" & $T & "], Stream, string) defined".}
 
 proc readInt8Ctx*(s: Stream, what = "int8"): int8 =
   ## Takes the file stream and reads `int8`.
@@ -146,6 +147,9 @@ proc readString16Ctx*(s: Stream, what = "string16"): string =
     # Convert Windows-1252 bytes to UTF-8 string
     return encodings.convert(raw, "UTF-8", "CP1252")
 
+proc read*(t: typedesc[String16], s: Stream, what = "textList"): String16 =
+  result = readString16Ctx(s, what)
+
 proc readString8Ctx*(s: Stream, what = "string8"): string =
   ## Readers UE3 string8 from stream.
   ## Raises `IOError` if error occurred.
@@ -164,3 +168,9 @@ proc readString8Ctx*(s: Stream, what = "string8"): string =
 
   if s.readData(addr nul, 1) != 1:
     raise newException(IOError, &"EOF while reading string terminator at index {pos} while reading {what}")
+
+proc readListOf*[T](t: typedesc[T], s: Stream, what = "listOf"): seq[T] =
+  let count = readInt32Ctx(s, what & ".count")
+  result = newSeq[T](count)
+  for i in 0..<count:
+    result[i] = t.read(s, what & "." & $i)

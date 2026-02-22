@@ -5,7 +5,7 @@
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
 ## Fun fact: Modern replay formats have StructProperty!
 import std/[streams, options]
-import body, props, primitives
+import primitives, body, props 
 
 export Properties
 
@@ -25,11 +25,17 @@ type
   ReplayBody* = object
     contentSize*: int32
     contentCrc*: uint32
-    levels*: seq[string]
+    levels*: seq[String16]
     keyFrames*: seq[KeyFrame]
     networkSize*: int32
     networkData*: seq[byte]
     debugInfo*: seq[DebugInfo]
+    tickMarks*: seq[TickMark]
+    packages*: seq[String16]
+    objects*: seq[String16]
+    names*: seq[String16]
+    classIndices*: seq[ClassIndex]
+    netCache*: seq[NetCache]
   
   Replay* = object
     header*: ReplayHeader
@@ -50,8 +56,8 @@ proc parseBody*(s: Stream, netData: NetworkDataParse = NetworkDataParse.skipPars
   ## DOES NOT ACCOUNT FOR HEADER
   result.contentSize = readInt32Ctx(s, "body.contentSize")
   result.contentCrc = readUint32Ctx(s, "body.contentCrc")
-  result.levels = readTextList(s, "body.levels")
-  result.keyFrames = readKeyFrameList(s, "body.keyFrames")
+  result.levels = String16.readListOf(s, "body.levels")
+  result.keyFrames = KeyFrame.readListOf(s, "body.keyframes")
   result.networkSize = readInt32Ctx(s, "body.networkSize")
   case netData:
   of NetworkDataParse.skipDeserial:
@@ -63,6 +69,13 @@ proc parseBody*(s: Stream, netData: NetworkDataParse = NetworkDataParse.skipPars
   of NetworkDataParse.getAll:
     echo "Network parsing is not yet completed. Skipping!"
     s.setPosition(s.getPosition() + int(result.networkSize))
+  result.debugInfo = DebugInfo.readListOf(s, "body.debugInfo")
+  result.tickMarks = TickMark.readListOf(s, "body.tickMarks")
+  result.packages = String16.readListOf(s, "body.packages")
+  result.objects = String16.readListOf(s, "body.objects")
+  result.names = String16.readListof(s, "body.names")
+  result.classIndices = ClassIndex.readListof(s, "body.classIndices")
+  result.netCache = NetCache.readListOf(s, "body.netCache")
 
 proc parseHeader*(replayPath: string): ReplayHeader =
   ## Opens a replay file and parses its header into a ReplayHeader.
