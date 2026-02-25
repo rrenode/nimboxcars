@@ -1,8 +1,6 @@
 import std/[parseopt, options]
 import nimboxcars/parser
 
-export parseReplay, Replay, ReplayHeader
-
 when isMainModule:
 
   var replayFilePath: Option[string] = none(string)
@@ -31,5 +29,5 @@ when isMainModule:
     echo "Replay file path not provided!"
     quit()
 
-  let replay = parseReplay(replayFilePath.get())
-  echo replay
+  let replay = parseHeader(replayFilePath.get())
+  #echo replay

@@ -65,7 +65,7 @@ proc readPropertyName*(s: Stream; what = "propName"): Option[string] =
   return some(n)
 
 proc readArrayOfProperties*(s: Stream; what: string = "arrayProp"): seq[Properties] =
-  let count = int(readInt32Ctx(s, what))
+  let count = int(int32.take(s, what))
   if count < 0:
     raise newException(ValueError, &"Negative ArrayProperty size: {count} at {s.getPosition()}")
 
@@ -87,7 +87,7 @@ proc readPropertiesUntilNone*(s: Stream; what: string = "header.properties"): Pr
     var propVal: PropertyValue
     case propType:
       of "IntProperty":
-        propVal = PropertyValue(kind: pkInt, i: readInt32Ctx(s, &"{what}.{nameOpt}"))
+        propVal = PropertyValue(kind: pkInt, i: int32.take(s, &"{what}.{nameOpt}"))
       of "StrProperty":
         propVal = PropertyValue(kind: pkStr, s: readString16Ctx(s, &"{what}.{nameOpt}"))
       of "NameProperty":

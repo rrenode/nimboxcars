@@ -33,33 +33,33 @@ type
 proc read*(t: typedesc[KeyFrame]; s: Stream; what = "keyFrame"): KeyFrame =
   ##
   result.time = readFloat32Ctx(s, &"{what}.keyFrame.time")
-  result.frame = readInt32Ctx(s, &"{what}.keyFrame.frame")
-  result.position = readInt32Ctx(s, &"{what}.keyFrame.position")
+  result.frame = int32.take(s, &"{what}.keyFrame.frame")
+  result.position = int32.take(s, &"{what}.keyFrame.position")
 
 proc read*(t: typedesc[DebugInfo]; s: Stream; what = "debugInfo"): DebugInfo =
   ##
-  result.frame = readInt32Ctx(s, &"{what}.debugInfo.frame")
+  result.frame = int32.take(s, &"{what}.debugInfo.frame")
   result.user = readString16Ctx(s, &"{what}.debugInfo.user")
   result.text = readString16Ctx(s, &"{what}.debugInfo.text")
 
 proc read*(t: typedesc[TickMark]; s: Stream; what = "tickMark"): TickMark =
   ##
   result.description = readString16Ctx(s, &"{what}.tickMark.description")
-  result.frame = readInt32Ctx(s, &"{what}.tickMark.frame")
+  result.frame = int32.take(s, &"{what}.tickMark.frame")
 
 proc read*(t: typedesc[ClassIndex]; s: Stream; what = "classIndex"): ClassIndex =
   ##
   result.class = readString16Ctx(s, &"{what}.classIndex.class")
-  result.index = readInt32Ctx(s, &"{what}.classIndex.index")
+  result.index = int32.take(s, &"{what}.classIndex.index")
 
 proc read*(t: typedesc[NetCacheProperty]; s: Stream; what = "netCacheProp"): NetCacheProperty =
   ##
-  result.objectIndex = readInt32Ctx(s, &"{what}.netCacheProp.objectIndex")
-  result.streamId = readInt32Ctx(s, &"{what}.netCacheProp.streamId")
+  result.objectIndex = int32.take(s, &"{what}.netCacheProp.objectIndex")
+  result.streamId = int32.take(s, &"{what}.netCacheProp.streamId")
 
 proc read*(t: typedesc[NetCache]; s: Stream; what = "netCache"): NetCache =
   ##
-  result.objectIndex = readInt32Ctx(s, &"{what}.netCache.objectIndex")
-  result.parentId = readInt32Ctx(s, &"{what}.netCache.parentId")
-  result.cacheId = readInt32Ctx(s, &"{what}.netCache.cacheId")
+  result.objectIndex = int32.take(s, &"{what}.netCache.objectIndex")
+  result.parentId = int32.take(s, &"{what}.netCache.parentId")
+  result.cacheId = int32.take(s, &"{what}.netCache.cacheId")
   result.properties = NetCacheProperty.readListOf(s, &"{what}.netCache.props")

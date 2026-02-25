@@ -43,39 +43,14 @@ type
 
 proc parseHeader*(s: Stream): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
-  result.hSize = readInt32Ctx(s, "header.hSize")
+  let r = int32.takeWithPos(s, "header.hSize")
+  result.hSize = r.val
   result.headerCrc = readUint32Ctx(s, "header.crc")
   result.majorVersion = readUint32Ctx(s, "header.majorVersion")
   result.minorVersion = readUint32Ctx(s, "header.minorVersion")
   result.netVersion = readUint32Ctx(s, "header.netVersion")
   result.gameType = readString8Ctx(s, "header.gameType")
-  result.props = readPropertiesUntilNone(s)
-
-proc parseBody*(s: Stream, netData: NetworkDataParse = NetworkDataParse.skipParsing): ReplayBody =
-  ## Parse replay file stream into ReplayBody.
-  ## DOES NOT ACCOUNT FOR HEADER
-  result.contentSize = readInt32Ctx(s, "body.contentSize")
-  result.contentCrc = readUint32Ctx(s, "body.contentCrc")
-  result.levels = String16.readListOf(s, "body.levels")
-  result.keyFrames = KeyFrame.readListOf(s, "body.keyframes")
-  result.networkSize = readInt32Ctx(s, "body.networkSize")
-  case netData:
-  of NetworkDataParse.skipDeserial:
-    var networkData = newSeq[byte](result.networkSize)
-    discard s.readData(addr networkData[0], result.networkSize)
-    result.networkData = networkData
-  of NetworkDataParse.skipParsing:
-    s.setPosition(s.getPosition() + int(result.networkSize))
-  of NetworkDataParse.getAll:
-    echo "Network parsing is not yet completed. Skipping!"
-    s.setPosition(s.getPosition() + int(result.networkSize))
-  result.debugInfo = DebugInfo.readListOf(s, "body.debugInfo")
-  result.tickMarks = TickMark.readListOf(s, "body.tickMarks")
-  result.packages = String16.readListOf(s, "body.packages")
-  result.objects = String16.readListOf(s, "body.objects")
-  result.names = String16.readListof(s, "body.names")
-  result.classIndices = ClassIndex.readListof(s, "body.classIndices")
-  result.netCache = NetCache.readListOf(s, "body.netCache")
+  #result.props = readPropertiesUntilNone(s)
 
 proc parseHeader*(replayPath: string): ReplayHeader =
   ## Opens a replay file and parses its header into a ReplayHeader.
@@ -94,4 +69,3 @@ proc parseReplay*(replayPath: string; netData: NetworkDataParse = NetworkDataPar
   defer: fs.close()
 
   result.header = parseHeader(fs)
-  result.body = parseBody(fs)

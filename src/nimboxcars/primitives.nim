@@ -3,10 +3,22 @@
 import std/[streams, encodings, strformat]
 
 type
+  # Meta Type first
+  RlNode* = object
+    startPos*: int
+    endPos*: int
+
+  # Wrapper types
   String8* = string
   String16* = string
 
-proc read*[T](t: typedesc[T], s: Stream; what: string): T {.inline.} =
+proc takeWithPos*[T](t: typedesc[T], s: Stream, what: string): tuple[val:T, node:RlNode] =
+  let startPos: int = s.getPosition()
+  let value = t.take(s, what)
+  let endPos: int = s.getPosition()
+  result = (val: value, node: RlNode(startPos: startPos, endPos: endPos))
+
+proc take*[T](t: typedesc[T], s: Stream; what: string): T {.inline.} =
   {.error: "No read(typedesc[" & $T & "], Stream, string) defined".}
 
 proc readInt8Ctx*(s: Stream, what = "int8"): int8 =
@@ -22,8 +34,8 @@ proc readInt8Ctx*(s: Stream, what = "int8"): int8 =
   except IOError as e:
     raise newException(IOError,  &"EOF while reading {what} at offset {pos}: {e.msg}")
 
-proc readInt32Ctx*(s: Stream, what = "int32"): int32 =
-  ## Takes the file stream and reads `int32`.
+proc take*(t: typedesc[int32], s: Stream, what = "int32"): int32 =
+  ## Takes the file stream and reads `int8`.
   ## Raises `IOError` is error occurred.
   ## Uses `what` for error message.
   var pos: int = s.getPosition()
@@ -35,7 +47,7 @@ proc readInt32Ctx*(s: Stream, what = "int32"): int32 =
   except IOError as e:
     raise newException(IOError,  &"EOF while reading {what} at offset {pos}: {e.msg}")
 
-proc readInt64Ctx*(s: Stream, what = "int64"): int64 =
+proc take*(t: typedesc[int64], s: Stream, what = "int64"): int64 =
   ## Takes the file stream and reads `int64`.
   ## Raises `IOError` is error occurred.
   ## Uses `what` for error message.
@@ -114,7 +126,7 @@ proc readString16Ctx*(s: Stream, what = "string16"): string =
   ## 
   # I might of messed this up? But there's no error. Soemthing just feels wrong.
   let pos = s.getPosition()
-  let characters = readInt32Ctx(s, what)
+  let characters = int32.take(s, what=what)
 
   if characters < -10_000'i32 or characters > 10_000'i32:
     raise newException(ValueError, &"TextTooLarge({characters}) at index {pos} while reading {what}")
@@ -147,7 +159,7 @@ proc readString16Ctx*(s: Stream, what = "string16"): string =
     # Convert Windows-1252 bytes to UTF-8 string
     return encodings.convert(raw, "UTF-8", "CP1252")
 
-proc read*(t: typedesc[String16], s: Stream, what = "textList"): String16 =
+proc take*(t: typedesc[String16], s: Stream, what = "textList"): String16 =
   result = readString16Ctx(s, what)
 
 proc readString8Ctx*(s: Stream, what = "string8"): string =
@@ -170,7 +182,7 @@ proc readString8Ctx*(s: Stream, what = "string8"): string =
     raise newException(IOError, &"EOF while reading string terminator at index {pos} while reading {what}")
 
 proc readListOf*[T](t: typedesc[T], s: Stream, what = "listOf"): seq[T] =
-  let count = readInt32Ctx(s, what & ".count")
+  let count = int32.take(s, what & ".count")
   result = newSeq[T](count)
   for i in 0..<count:
-    result[i] = t.read(s, what & "." & $i)
+    result[i] = t.take(s, what & "." & $i)
