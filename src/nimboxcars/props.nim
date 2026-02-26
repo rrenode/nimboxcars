@@ -81,7 +81,7 @@ proc readPropertiesUntilNone*(s: Stream; what: string = "header.properties"): Pr
       break
     let propType = String8.take(s, &"{what}.{nameOpt}.propType")
 
-    discard uint32.take(s) # Boxcars says not to rely on this!
+    discard uint32.take(s) # Boxcars says not to rely on this size and testing agrees!
     discard uint32.take(s) # Unknown Prop Attribute
     
     var propVal: PropertyValue
@@ -97,7 +97,10 @@ proc readPropertiesUntilNone*(s: Stream; what: string = "header.properties"): Pr
       of "ArrayProperty":
         propVal = PropertyValue(kind: pkArray, props: readArrayOfProperties(s, &"{what}.{nameOpt}"))
       of "ByteProperty":
-        propVal = PropertyValue(kind: pkBytes, bytes: readByteProperty(s, &"{what}.{nameOpt}"))
+        let bv = readByteProperty(s, &"{what}.{nameOpt}")
+        if bv.kind == "None":
+          continue
+        propVal = PropertyValue(kind: pkBytes, bytes: bv)
       of "QWordProperty":
         propVal = PropertyValue(kind: pkQWord, q: uint64.take(s, &"{what}.{nameOpt}"))
       of "BoolProperty":
