@@ -67,6 +67,33 @@ proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseM
   result.contentSize = int32.take(s, "body.contentSize")
   result.contentCrc = uint32.take(s, "body.crc")
   result.levels = FString.takeListOf(s, "body.levels")
+  result.keyFrames = KeyFrame.takeListOf(s, "body.keyframes")
+  result.networkSize = int32.take(s, "body.netdataSize")
+
+  proc skipNetdata(networkSize: int32) =
+    ## Just for easier reading since I reuse this logic for now
+    let posPastNet = s.getPosition() + int(networkSize)
+    s.setPosition(posPastNet)
+
+  case netDataMode:
+  of NetworkDataParseMode.skipDeserial:
+    # Reads and saves network data as bytes
+    result.networkData = takeBytes(s, result.networkSize)
+  of NetworkDataParseMode.skipParsing:
+    # Skips network data entirely
+    skipNetdata(result.networkSize)
+  of NetworkDataParseMode.getAll:
+    # Parses and Deserializes all of netdata
+    echo "NetworkDataPaseMode `getAll` is not yet implemented... skipping network data."
+    skipNetdata(result.networkSize)
+
+  result.debugInfo = DebugInfo.takeListOf(s, "body.debugInfo")
+  result.tickMarks = TickMark.takeListOf(s, "body.tickMarks")
+  result.packages = FString.takeListOf(s, "body.packages")
+  result.objects = FString.takeListOf(s, "body.objects")
+  result.names = FString.takeListOf(s, "body.names")
+  result.classIndices = ClassIndex.takeListOf(s, "body.classIndices")
+  result.netCache = NetCache.takeListof(s, "body.netCache")
 
 proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing): Replay =
   ## Opens a replay file and parses it into a Replay.
@@ -76,5 +103,4 @@ proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = Networ
   defer: fs.close()
 
   result.header = parseHeader(fs)
-
   result.body = parseBody(fs)

@@ -29,5 +29,4 @@ when isMainModule:
     echo "Replay file path not provided!"
     quit()
 
-  let replay = parseHeader(replayFilePath.get())
-  echo replay
+  let replay = parseReplay(replayFilePath.get())
