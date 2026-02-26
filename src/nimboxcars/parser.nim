@@ -45,7 +45,11 @@ proc parseHeader*(s: Stream): ReplayHeader =
   result.headerCrc = uint32.take(s, "header.crc")
   result.majorVersion = uint32.take(s, "header.majorVersion")
   result.minorVersion = uint32.take(s, "header.minorVersion")
-  result.netVersion = uint32.take(s, "header.netVersion")
+
+  if result.majorVersion > 865'u32 and result.minorVersion > 17'u32:
+    result.netVersion = uint32.take(s, "header.netVersion")
+  else:
+    result.netVersion = 0'u32
   result.gameType = String8.take(s, "header.gameType")
   result.props = readPropertiesUntilNone(s)
 
@@ -60,6 +64,8 @@ proc parseHeader*(replayPath: string): ReplayHeader =
 
 proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing): ReplayBody =
   ## Parse continued replay file stream into ReplayBody
+  result.contentSize = int32.take(s, "body.contentSize")
+  result.contentCrc = uint32.take(s, "body.crc")
   result.levels = FString.takeListOf(s, "body.levels")
 
 proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing): Replay =
@@ -70,4 +76,5 @@ proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = Networ
   defer: fs.close()
 
   result.header = parseHeader(fs)
+
   result.body = parseBody(fs)
