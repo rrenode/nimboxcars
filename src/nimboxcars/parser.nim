@@ -5,7 +5,7 @@
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
 ## Fun fact: Modern replay formats have StructProperty!
 import std/[streams, options]
-import primitives, body, props 
+import nimboxcars/[body, strings, primitives, props]
 
 export Properties
 
@@ -25,15 +25,15 @@ type
   ReplayBody* = object
     contentSize*: int32
     contentCrc*: uint32
-    levels*: seq[String16]
+    levels*: seq[FString]
     keyFrames*: seq[KeyFrame]
     networkSize*: int32
     networkData*: seq[byte]
     debugInfo*: seq[DebugInfo]
     tickMarks*: seq[TickMark]
-    packages*: seq[String16]
-    objects*: seq[String16]
-    names*: seq[String16]
+    packages*: seq[FString]
+    objects*: seq[FString]
+    names*: seq[FString]
     classIndices*: seq[ClassIndex]
     netCache*: seq[NetCache]
   
@@ -45,11 +45,11 @@ proc parseHeader*(s: Stream): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
   let r = int32.takeWithPos(s, "header.hSize")
   result.hSize = r.val
-  result.headerCrc = readUint32Ctx(s, "header.crc")
-  result.majorVersion = readUint32Ctx(s, "header.majorVersion")
-  result.minorVersion = readUint32Ctx(s, "header.minorVersion")
-  result.netVersion = readUint32Ctx(s, "header.netVersion")
-  result.gameType = readString8Ctx(s, "header.gameType")
+  result.headerCrc = uint32.take(s, "header.crc")
+  result.majorVersion = uint32.take(s, "header.majorVersion")
+  result.minorVersion = uint32.take(s, "header.minorVersion")
+  result.netVersion = uint32.take(s, "header.netVersion")
+  result.gameType = String8.take(s, "header.gameType")
   #result.props = readPropertiesUntilNone(s)
 
 proc parseHeader*(replayPath: string): ReplayHeader =

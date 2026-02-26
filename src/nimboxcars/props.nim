@@ -1,5 +1,5 @@
 import std/[streams, options, strformat]
-import primitives
+import nimboxcars/[strings, primitives]
 
 type
   PropertyKind* = enum
@@ -51,15 +51,15 @@ proc kindFromTypeString*(t: string): PropertyKind =
     pkUnknown
 
 proc readByteProperty*(s: Stream; what = "byteProp"): ByteValue =
-  let kind = readString8Ctx(s, what)
+  let kind = String8.take(s, what)
   if kind == "None":
     discard readUint8(s)
     return ByteValue(kind: kind, value: none(string))
   else:
-    return ByteValue(kind: kind, value: some(readString8Ctx(s, what)))
+    return ByteValue(kind: kind, value: some(String8.take(s, what)))
 
 proc readPropertyName*(s: Stream; what = "propName"): Option[string] = 
-  let n = readString8Ctx(s, what)
+  let n = String8.take(s, what)
   if n == "None" or n == "\0\0\0None":
     return none(string)
   return some(n)
@@ -79,31 +79,31 @@ proc readPropertiesUntilNone*(s: Stream; what: string = "header.properties"): Pr
     let nameOpt = readPropertyName(s, what)
     if nameOpt.isNone:
       break
-    let propType = readString8Ctx(s, &"{what}.{nameOpt}.propType")
+    let propType = String8.take(s, &"{what}.{nameOpt}.propType")
 
-    discard readUint32Ctx(s) # Boxcars says not to rely on this!
-    discard readUint32Ctx(s) # Unknown Prop Attribute
+    discard uint32.take(s) # Boxcars says not to rely on this!
+    discard uint32.take(s) # Unknown Prop Attribute
     
     var propVal: PropertyValue
     case propType:
       of "IntProperty":
         propVal = PropertyValue(kind: pkInt, i: int32.take(s, &"{what}.{nameOpt}"))
       of "StrProperty":
-        propVal = PropertyValue(kind: pkStr, s: readString16Ctx(s, &"{what}.{nameOpt}"))
+        propVal = PropertyValue(kind: pkStr, s: FString.take(s, &"{what}.{nameOpt}"))
       of "NameProperty":
-        propVal = PropertyValue(kind: pkName, s: readString16Ctx(s, &"{what}.{nameOpt}"))
+        propVal = PropertyValue(kind: pkName, s: FString.take(s, &"{what}.{nameOpt}"))
       of "FloatProperty":
-        propVal = PropertyValue(kind: pkFloat, f: readFloat32Ctx(s, &"{what}.{nameOpt}"))
+        propVal = PropertyValue(kind: pkFloat, f: float32.take(s, &"{what}.{nameOpt}"))
       of "ArrayProperty":
         propVal = PropertyValue(kind: pkArray, props: readArrayOfProperties(s, &"{what}.{nameOpt}"))
       of "ByteProperty":
         propVal = PropertyValue(kind: pkBytes, bytes: readByteProperty(s, &"{what}.{nameOpt}"))
       of "QWordProperty":
-        propVal = PropertyValue(kind: pkQWord, q: readUint64Ctx(s, &"{what}.{nameOpt}"))
+        propVal = PropertyValue(kind: pkQWord, q: uint64.take(s, &"{what}.{nameOpt}"))
       of "BoolProperty":
-        propVal = PropertyValue(kind: pkBool, b: readBool8Ctx(s, &"{what}.{nameOpt}"))
+        propVal = PropertyValue(kind: pkBool, b: Bool8.take(s, &"{what}.{nameOpt}"))
       of "StructProperty":
-        let structName = readString8Ctx(s, &"{what}.{nameOpt}")
+        let structName = String8.take(s, &"{what}.{nameOpt}")
         let fields = readPropertiesUntilNone(s, &"{what}.{nameOpt}.{structName}")
         propVal = PropertyValue(kind: pkStruct, st: StructValue(name: structName, fields: fields))
     result.add(Property(name:nameOpt.get(), kind:propType, value:propVal))

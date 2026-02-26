@@ -1,5 +1,5 @@
 import std/[streams, options, strformat]
-import primitives
+import nimboxcars/[strings, primitives]
 
 type
   KeyFrame* = object
@@ -9,15 +9,15 @@ type
   
   DebugInfo* = object
     frame*: int32
-    user*: String16
-    text*: String16
+    user*: FString
+    text*: FString
 
   TickMark* = object
-    description*: String16
+    description*: FString
     frame*: int32
 
   ClassIndex* = object
-    class*: String16
+    class*: FString
     index*: int32
 
   NetCacheProperty* = object
@@ -30,36 +30,36 @@ type
     cacheId*: int32
     properties*: seq[NetCacheProperty]
 
-proc read*(t: typedesc[KeyFrame]; s: Stream; what = "keyFrame"): KeyFrame =
+proc take*(t: typedesc[KeyFrame]; s: Stream; what = "keyFrame"): KeyFrame =
   ##
-  result.time = readFloat32Ctx(s, &"{what}.keyFrame.time")
+  result.time = float32.take(s, &"{what}.keyFrame.time")
   result.frame = int32.take(s, &"{what}.keyFrame.frame")
   result.position = int32.take(s, &"{what}.keyFrame.position")
 
-proc read*(t: typedesc[DebugInfo]; s: Stream; what = "debugInfo"): DebugInfo =
+proc take*(t: typedesc[DebugInfo]; s: Stream; what = "debugInfo"): DebugInfo =
   ##
   result.frame = int32.take(s, &"{what}.debugInfo.frame")
-  result.user = readString16Ctx(s, &"{what}.debugInfo.user")
-  result.text = readString16Ctx(s, &"{what}.debugInfo.text")
+  result.user = FString.take(s, &"{what}.debugInfo.user")
+  result.text = FString.take(s, &"{what}.debugInfo.text")
 
-proc read*(t: typedesc[TickMark]; s: Stream; what = "tickMark"): TickMark =
+proc take*(t: typedesc[TickMark]; s: Stream; what = "tickMark"): TickMark =
   ##
-  result.description = readString16Ctx(s, &"{what}.tickMark.description")
+  result.description = FString.take(s, &"{what}.tickMark.description")
   result.frame = int32.take(s, &"{what}.tickMark.frame")
 
-proc read*(t: typedesc[ClassIndex]; s: Stream; what = "classIndex"): ClassIndex =
+proc take*(t: typedesc[ClassIndex]; s: Stream; what = "classIndex"): ClassIndex =
   ##
-  result.class = readString16Ctx(s, &"{what}.classIndex.class")
+  result.class = FString.take(s, &"{what}.classIndex.class")
   result.index = int32.take(s, &"{what}.classIndex.index")
 
-proc read*(t: typedesc[NetCacheProperty]; s: Stream; what = "netCacheProp"): NetCacheProperty =
+proc take*(t: typedesc[NetCacheProperty]; s: Stream; what = "netCacheProp"): NetCacheProperty =
   ##
   result.objectIndex = int32.take(s, &"{what}.netCacheProp.objectIndex")
   result.streamId = int32.take(s, &"{what}.netCacheProp.streamId")
 
-proc read*(t: typedesc[NetCache]; s: Stream; what = "netCache"): NetCache =
+proc take*(t: typedesc[NetCache]; s: Stream; what = "netCache"): NetCache =
   ##
   result.objectIndex = int32.take(s, &"{what}.netCache.objectIndex")
   result.parentId = int32.take(s, &"{what}.netCache.parentId")
   result.cacheId = int32.take(s, &"{what}.netCache.cacheId")
-  result.properties = NetCacheProperty.readListOf(s, &"{what}.netCache.props")
+  result.properties = NetCacheProperty.takeListOf(s, &"{what}.netCache.props")

@@ -30,4 +30,4 @@ when isMainModule:
     quit()
 
   let replay = parseHeader(replayFilePath.get())
-  #echo replay
+  echo replay
