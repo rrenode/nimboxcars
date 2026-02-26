@@ -38,7 +38,7 @@ NimBoxCars is currently an infant. As such it lacks quite a bit of functionality
 
 As a **lib**, NimBoxCars provides object types (most notably the Replay object). It also provides binary step-reading procs for replay files' data types. There's far too much in the lib to go over here in the readme so please see TODO:LibDocs.
 
-In terms of **parsing**, the entire header, including the header's properties, are parsed and serialized as NimBoxCar's object types.
+In terms of **parsing**, the entire header, including the header's properties, are parsed and serialized as NimBoxCar's object types. Have also completed parsing most of the body; but not the network data.
 
 As a **CLI**, it only outputs the string representation of NimBoxCar's Replay object type.
 
