@@ -4,7 +4,7 @@
 ##  https://github.com/tanrbobanr/rocket-league-replay-format/blob/main/rpdoc_generated.md
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
 ## Fun fact: Modern replay formats have StructProperty!
-import std/[streams, options]
+import std/[streams]
 import nimboxcars/[body, strings, primitives, props]
 
 export Properties
@@ -50,7 +50,7 @@ proc parseHeader*(s: Stream): ReplayHeader =
   result.minorVersion = uint32.take(s, "header.minorVersion")
   result.netVersion = uint32.take(s, "header.netVersion")
   result.gameType = String8.take(s, "header.gameType")
-  #result.props = readPropertiesUntilNone(s)
+  result.props = readPropertiesUntilNone(s)
 
 proc parseHeader*(replayPath: string): ReplayHeader =
   ## Opens a replay file and parses its header into a ReplayHeader.

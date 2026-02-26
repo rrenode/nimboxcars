@@ -1,4 +1,4 @@
-import std/[streams, options, strformat]
+import std/[streams, strformat]
 import nimboxcars/[strings, primitives]
 
 type

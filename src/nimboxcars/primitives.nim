@@ -1,5 +1,5 @@
 ## Binary decoding from stream for fixed-width types as wrappers of Nim std/streams built-ins.
-import std/[streams, encodings, strformat]
+import std/[streams, strformat]
 
 type
   # Meta Type first
