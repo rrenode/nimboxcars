@@ -36,20 +36,6 @@ proc readPropertiesUntilNone*(s: Stream; what: string = "header.properties"): Pr
 proc readPropertyName*(s: Stream; what: string = "propName"): Option[string]
 proc readArrayOfProperties*(s: Stream; what: string = "arrayProp"): seq[Properties]
 
-proc kindFromTypeString*(t: string): PropertyKind =
-  case t:
-  of "IntProperty": pkInt
-  of "StrProperty": pkStr
-  of "NameProperty": pkName
-  of "FloatProperty": pkFloat
-  of "ByteProperty": pkBytes
-  of "ArrayProperty": pkArray
-  of "QWordProperty": pkQWord
-  of "BoolProperty": pkBool
-  of "StructProperty": pkStruct
-  else:
-    pkUnknown
-
 proc readByteProperty*(s: Stream; what = "byteProp"): ByteValue =
   let kind = String8.take(s, what)
   if kind == "None":
