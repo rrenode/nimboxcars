@@ -2,11 +2,6 @@
 import std/[streams, strformat]
 
 type
-  # Meta Type first
-  RlNode* = object
-    startPos*: int
-    endPos*: int
-
   # Wrapper types
   Bool8* = bool
 

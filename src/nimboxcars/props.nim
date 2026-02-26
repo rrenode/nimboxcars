@@ -1,5 +1,5 @@
 import std/[streams, options, strformat]
-import nimboxcars/datatypes
+import nimboxcars/decode
 
 type
   PropertyKind* = enum

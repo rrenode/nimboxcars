@@ -1,5 +1,5 @@
 import std/[streams, strformat]
-import nimboxcars/datatypes/primitives
+import nimboxcars/decode/primitives
 
 proc take*[T](t: typedesc[T], s: Stream; what: string): T {.inline.} =
   {.error: "No read(typedesc[" & $T & "], Stream, string) defined".}

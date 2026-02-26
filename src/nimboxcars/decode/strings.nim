@@ -1,5 +1,6 @@
 import std/[streams, encodings, strformat]
-import nimboxcars/datatypes/[primitives, genericsutils]
+import nimboxcars/decode/[primitives, genericsutils]
+export primitives, genericsutils
 
 type
   # Wrapper Types
