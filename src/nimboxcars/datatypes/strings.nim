@@ -10,7 +10,7 @@ proc take*(t: typedesc[String8], s: Stream, what = "String8"): String8 =
   ## Readers UE3 string8 from stream.
   ## Raises `IOError` if error occurred.
   let pos = s.getPosition()
-  let n = int(uint32.take(s, what))
+  let n = int(int32.take(s, what))
 
   let m = n - 1
   if n <= 0: return ""
