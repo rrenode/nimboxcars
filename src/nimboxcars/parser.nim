@@ -5,12 +5,10 @@
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
 ## Fun fact: Modern replay formats have StructProperty!
 import std/[streams]
-import nimboxcars/[body, strings, primitives, props]
-
-export Properties
+import nimboxcars/[datatypes, body, props]
 
 type
-  NetworkDataParse = enum
+  NetworkDataParseMode* = enum
     skipDeserial, skipParsing, getAll
 
   ReplayHeader* = object
@@ -43,8 +41,7 @@ type
 
 proc parseHeader*(s: Stream): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
-  let r = int32.takeWithPos(s, "header.hSize")
-  result.hSize = r.val
+  result.hSize = int32.take(s, "header.hSize")
   result.headerCrc = uint32.take(s, "header.crc")
   result.majorVersion = uint32.take(s, "header.majorVersion")
   result.minorVersion = uint32.take(s, "header.minorVersion")
@@ -53,7 +50,7 @@ proc parseHeader*(s: Stream): ReplayHeader =
   result.props = readPropertiesUntilNone(s)
 
 proc parseHeader*(replayPath: string): ReplayHeader =
-  ## Opens a replay file and parses its header into a ReplayHeader.
+  ## Opens a replay file and parses only its header into a ReplayHeader.
   var fs: FileStream = newFileStream(replayPath, fmRead)
   if fs.isNil:
     raise newException(IOError, "Cannot open file: " & replayPath)
@@ -61,7 +58,11 @@ proc parseHeader*(replayPath: string): ReplayHeader =
 
   result = parseHeader(fs)
 
-proc parseReplay*(replayPath: string; netData: NetworkDataParse = NetworkDataParse.skipParsing): Replay =
+proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing): ReplayBody =
+  ## Parse continued replay file stream into ReplayBody
+  result.levels = FString.takeListOf(s, "body.levels")
+
+proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing): Replay =
   ## Opens a replay file and parses it into a Replay.
   var fs: FileStream = newFileStream(replayPath, fmRead)
   if fs.isNil:
@@ -69,3 +70,4 @@ proc parseReplay*(replayPath: string; netData: NetworkDataParse = NetworkDataPar
   defer: fs.close()
 
   result.header = parseHeader(fs)
+  result.body = parseBody(fs)

@@ -10,15 +10,6 @@ type
   # Wrapper types
   Bool8* = bool
 
-proc takeWithPos*[T](t: typedesc[T], s: Stream, what: string): tuple[val:T, node:RlNode] =
-  let startPos: int = s.getPosition()
-  let value = t.take(s, what)
-  let endPos: int = s.getPosition()
-  result = (val: value, node: RlNode(startPos: startPos, endPos: endPos))
-
-proc take*[T](t: typedesc[T], s: Stream; what: string): T {.inline.} =
-  {.error: "No read(typedesc[" & $T & "], Stream, string) defined".}
-
 proc take*(t: typedesc[int8], s: Stream, what = "int8"): int8 =
   ## Takes the file stream and reads `int8`.
   ## Raises `IOError` is error occurred.

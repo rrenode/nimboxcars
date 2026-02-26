@@ -1,5 +1,5 @@
 import std/[streams, strformat]
-import nimboxcars/[strings, primitives]
+import nimboxcars/datatypes
 
 type
   KeyFrame* = object

@@ -1,5 +1,5 @@
 import std/[streams, encodings, strformat]
-import primitives
+import nimboxcars/datatypes/[primitives, genericsutils]
 
 type
   # Wrapper Types
@@ -24,12 +24,6 @@ proc take*(t: typedesc[String8], s: Stream, what = "String8"): String8 =
 
   if s.readData(addr nul, 1) != 1:
     raise newException(IOError, &"EOF while reading string terminator at index {pos} while reading {what}")
-
-proc takeListOf*[T](t: typedesc[T], s: Stream, what = "listOf"): seq[T] =
-  let count = int32.take(s, what & ".count")
-  result = newSeq[T](count)
-  for i in 0..<count:
-    result[i] = t.take(s, what & "." & $i)
 
 proc take*(t: typedesc[FString], s: Stream, what = "FString"): FString =
   ## Takes the file stream and reads bytes as a string; encoding as either utf-16 or Windows-1252
