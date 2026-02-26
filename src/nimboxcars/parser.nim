@@ -5,7 +5,7 @@
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
 ## Fun fact: Modern replay formats have StructProperty!
 import std/[streams]
-import nimboxcars/[decode, model, props]
+import nimboxcars/[decode, model]
 
 type
   NetworkDataParseMode* = enum

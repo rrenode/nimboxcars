@@ -1,6 +1,6 @@
 import std/[streams, strformat]
 import nimboxcars/decode/[genericsutils, strings]
-import nimboxcars/model/body
+import nimboxcars/model/[body, strings]
 
 proc take*(t: typedesc[KeyFrame]; s: Stream; what = "keyFrame"): KeyFrame =
   ##

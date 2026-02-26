@@ -1,3 +1,3 @@
-import nimboxcars/decode/[body, primitives, strings, genericsutils]
+import nimboxcars/decode/[body, props, primitives, strings, genericsutils]
 
-export body, primitives, strings, genericsutils
+export body, props, primitives, strings, genericsutils

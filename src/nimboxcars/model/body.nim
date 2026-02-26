@@ -1,4 +1,4 @@
-import nimboxcars/decode/[strings]
+import nimboxcars/model/[strings]
 
 type
   KeyFrame* = object

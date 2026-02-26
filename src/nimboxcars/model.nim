@@ -1,3 +1,3 @@
-import nimboxcars/model/[body]
+import nimboxcars/model/[body, props, strings]
 
-export body
+export body, props, strings

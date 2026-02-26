@@ -1,11 +1,7 @@
 import std/[streams, encodings, strformat]
+import nimboxcars/model/strings
 import nimboxcars/decode/[primitives, genericsutils]
 export primitives, genericsutils
-
-type
-  # Wrapper Types
-  String8* = string
-  FString* = distinct string
 
 proc take*(t: typedesc[String8], s: Stream, what = "String8"): String8 =
   ## Readers UE3 string8 from stream.
@@ -68,27 +64,3 @@ proc take*(t: typedesc[FString], s: Stream, what = "FString"): FString =
 
     # Convert Windows-1252 bytes to UTF-8 string
     return encodings.convert(raw, "UTF-8", "CP1252")
-
-converter toString*(s: FString): string {.inline.} =
-  string(s)
-
-converter toFString*(s: string): FString {.inline.} =
-  FString(s)
-
-proc `$`*(s: FString): string {.inline.} =
-  string(s)
-
-proc len*(s: FString): int {.inline.} =
-  string(s).len
-
-proc `==`*(a, b: FString): bool {.inline.} =
-  string(a) == string(b)
-
-proc `&`*(a: FString, b: string): FString {.inline.} =
-  FString(string(a) & b)
-
-proc `&`*(a: string, b: FString): FString {.inline.} =
-  FString(a & string(b))
-
-proc `&`*(a, b: FString): FString {.inline.} =
-  FString(string(a) & string(b))
