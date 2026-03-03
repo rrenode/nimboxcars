@@ -1,4 +1,5 @@
 import std/[parseopt, options]
+import json_serialization
 import nimboxcars/parser
 
 when isMainModule:
@@ -30,3 +31,6 @@ when isMainModule:
     quit()
 
   let replay = parseReplay(replayFilePath.get())
+
+  let json = Json.encode(replay)
+  writeFile("local/t.json", json)

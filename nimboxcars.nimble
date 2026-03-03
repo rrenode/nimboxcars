@@ -12,3 +12,4 @@ srcDir        = "src"
 requires "nim >= 2.2.6"
 
 bin = @["nimboxcars"]
+requires "json_serialization >= 0.4.4"
