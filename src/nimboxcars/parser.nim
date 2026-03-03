@@ -11,34 +11,6 @@ type
   NetworkDataParseMode* = enum
     skipDeserial, skipParsing, getAll
 
-  ReplayHeader* = object
-    hSize*: int32
-    headerCrc*: uint32
-    majorVersion*: uint32
-    minorVersion*: uint32
-    netVersion*: uint32
-    gameType*: string
-    props*: Properties
-  
-  ReplayBody* = object
-    contentSize*: int32
-    contentCrc*: uint32
-    levels*: seq[FString]
-    keyFrames*: seq[KeyFrame]
-    networkSize*: int32
-    networkData*: seq[byte]
-    debugInfo*: seq[DebugInfo]
-    tickMarks*: seq[TickMark]
-    packages*: seq[FString]
-    objects*: seq[FString]
-    names*: seq[FString]
-    classIndices*: seq[ClassIndex]
-    netCache*: seq[NetCache]
-  
-  Replay* = object
-    header*: ReplayHeader
-    body*: ReplayBody
-
 proc parseHeader*(s: Stream): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
   result.hSize = int32.take(s, "header.hSize")
