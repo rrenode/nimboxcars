@@ -1,7 +1,7 @@
 import std/[streams, encodings, strformat]
 import nimboxcars/model/strings
-import nimboxcars/decode/[primitives, genericsutils]
-export primitives, genericsutils
+import nimboxcars/decode/[primitives, generics_utils]
+export primitives, generics_utils
 
 proc take*(t: typedesc[String8], s: Stream, what = "String8"): String8 =
   ## Readers UE3 string8 from stream.

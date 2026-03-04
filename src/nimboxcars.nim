@@ -3,7 +3,7 @@
 
 import std/[parseopt, options]
 import nimboxcars/parser
-import nimboxcars/jsonmodel/[flavors, rrrocketflavor]
+import nimboxcars/jsonmodel/[flavors, rrrocket_flavor]
 
 from std/os import paramCount
 
