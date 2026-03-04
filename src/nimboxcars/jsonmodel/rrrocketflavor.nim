@@ -41,10 +41,12 @@ RRRocketFlavor.useDefaultSerializationFor ClassIndex
 RRRocketFlavor.useDefaultSerializationFor NetCacheProperty
 RRRocketFlavor.useDefaultSerializationFor NetCache
 
-proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: FString) {.raises: [IOError].} = 
+proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: FString) 
+  {.raises: [IOError].} = 
   w.writeValue(JsonString(toJson($v)))
 
-proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Option[string]) {.raises: [IOError].} =
+proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Option[string]) 
+  {.raises: [IOError].} =
   w.writeValue(JsonString(toJson(v.get())))
 
 proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Properties)
@@ -79,7 +81,8 @@ proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Properties)
       w.writeField(p.name, p.value.raw)
   w.endRecord()
 
-proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Replay) {.raises: [IOError].} =
+proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Replay) 
+  {.raises: [IOError].} =
   ## Flattens so that ReplayHeader's and ReplayBody's fields are in the root;
   ##  matching rrrocket.
   w.beginRecord()
