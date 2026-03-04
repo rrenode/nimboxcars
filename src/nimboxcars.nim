@@ -1,6 +1,6 @@
 import std/[parseopt, options]
-import json_serialization
 import nimboxcars/parser
+import nimboxcars/jsonmodel/[rrrocketflavor]
 
 when isMainModule:
 
@@ -32,5 +32,5 @@ when isMainModule:
 
   let replay = parseReplay(replayFilePath.get())
 
-  let json = Json.encode(replay)
+  let json = RRRocketFlavor.encode(replay)
   writeFile("local/t.json", json)
