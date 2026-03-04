@@ -1,6 +1,4 @@
 import std/options
-import nimboxcars/model/strings
-import nimboxcars/decode
 
 type
   PropertyKind* = enum
