@@ -21,7 +21,7 @@
 ##  be ambiguous.
 
 import json_serialization
-import std/[enumutils]
+import std/[enumutils, strutils]
 import nimboxcars/model
 import nimboxcars/decode/[primitives, strings]
 
@@ -33,9 +33,6 @@ createJsonFlavor RRRocketFlavor,
   requireAllFields = false,
   omitOptionalFields = false,
   allowUnknownFields = false
-
-RRRocketFlavor.useDefaultSerializationFor ByteValue
-RRRocketFlavor.useDefaultSerializationFor StructValue
 
 RRRocketFlavor.useDefaultSerializationFor KeyFrame
 RRRocketFlavor.useDefaultSerializationFor DebugInfo
@@ -63,7 +60,7 @@ proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Properties)
     of pkBool:
       w.writeField(p.name, p.value.b)
     of pkQWord:
-      w.writeField(p.name, p.value.q)
+      w.writeField(p.name, $p.value.q)
     of pkStr, pkName:
       w.writeField(p.name, p.value.s)
     of pkBytes:
@@ -71,7 +68,10 @@ proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Properties)
     of pkArray:
       w.writeField(p.name, p.value.props)
     of pkStruct:
-      w.writeField(p.name, p.value.st.fields)
+      w.writeFieldName(p.name)
+      w.writeObject:
+        w.writeMember("name", p.value.st.name)
+        w.writeMember("fields", p.value.st.fields)
     of pkUnknown:
       w.writeField(p.name, p.value.raw)
   w.endRecord()
