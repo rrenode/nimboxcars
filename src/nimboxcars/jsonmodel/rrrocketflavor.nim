@@ -64,7 +64,10 @@ proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Properties)
     of pkStr, pkName:
       w.writeField(p.name, p.value.s)
     of pkBytes:
-      w.writeField(p.name, p.value.bytes.value)
+      w.writeFieldName(p.name)
+      w.writeObject:
+        w.writeMember("kind", p.value.bytes.kind)
+        w.writeMember("value", p.value.bytes.value)
     of pkArray:
       w.writeField(p.name, p.value.props)
     of pkStruct:
@@ -91,10 +94,12 @@ proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Replay) {.raises: [IOErro
 
   w.writeField("content_size", v.body.contentSize)
   w.writeField("content_crc", v.body.contentCrc)
+  if v.body.networkData.len == 0:
+    w.writeField("network_frames", JsonString("null"))
+  else:
+    w.writeField("network_frames", v.body.networkData)
   w.writeField("levels", v.body.levels)
   w.writeField("keyframes", v.body.keyFrames)
-  w.writeField("network_size", v.body.networkSize)
-  w.writeField("network_frames", v.body.networkData)
   w.writeField("debug_info", v.body.debugInfo)
   w.writeField("tick_marks", v.body.tickMarks)
   w.writeField("packages", v.body.packages)
