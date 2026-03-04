@@ -21,9 +21,7 @@
 ##  be ambiguous.
 
 import json_serialization
-import std/[enumutils, strutils]
 import nimboxcars/model
-import nimboxcars/decode/[primitives, strings]
 
 export json_serialization
 
@@ -38,8 +36,6 @@ RRRocketFlavor.useDefaultSerializationFor KeyFrame
 RRRocketFlavor.useDefaultSerializationFor DebugInfo
 RRRocketFlavor.useDefaultSerializationFor TickMark
 RRRocketFlavor.useDefaultSerializationFor ClassIndex
-RRRocketFlavor.useDefaultSerializationFor NetCacheProperty
-RRRocketFlavor.useDefaultSerializationFor NetCache
 
 proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: FString) 
   {.raises: [IOError].} = 
@@ -48,6 +44,22 @@ proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: FString)
 proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Option[string]) 
   {.raises: [IOError].} =
   w.writeValue(JsonString(toJson(v.get())))
+
+proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: NetCacheProperty) 
+  {.raises: [IOError].} = 
+  w.beginRecord()
+  w.writeField("object_ind", v.objectIndex)
+  w.writeField("stream_id", v.streamId)
+  w.endRecord()
+
+proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: NetCache) 
+  {.raises: [IOError].} = 
+  w.beginRecord()
+  w.writeField("object_ind", v.objectIndex)
+  w.writeField("parent_id", v.parentId)
+  w.writeField("cache_id", v.cacheId)
+  w.writeField("properties", v.properties)
+  w.endRecord()
 
 proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Properties)
   {.raises: [IOError], gcsafe.} =
