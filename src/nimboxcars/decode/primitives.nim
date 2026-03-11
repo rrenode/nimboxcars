@@ -95,7 +95,7 @@ proc take*(t: typedesc[float32], s: Stream, what = "float32"): float32 =
   try:
     var x: float = readFloat32(s)
     when cpuEndian == bigEndian:
-      x = swapEndian64(x)
+      x = swapEndian32(x)
     result = x
   except IOError as e:
     raise newException(IOError, &"EOF while reading {what} at offset {pos}: {e.msg}")
