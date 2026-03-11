@@ -5,7 +5,7 @@
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
 ## Fun fact: Modern replay formats have StructProperty!
 import std/[streams]
-import nimboxcars/[decode, model]
+import nimboxcars/[decode, model, crc]
 
 export model
 
@@ -13,10 +13,23 @@ type
   NetworkDataParseMode* = enum
     skipDeserial, skipParsing, getAll
 
-proc parseHeader*(s: Stream): ReplayHeader =
+proc validateCrc(data: openArray[byte], expected: uint32): bool =
+  result = calcCrc(data) == expected
+
+
+proc parseHeader*(s: Stream, checkCrc: bool = false): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
   result.hSize = int32.take(s, "header.hSize")
   result.headerCrc = uint32.take(s, "header.crc")
+
+  if checkCrc:
+    let headerStartPos = s.getPosition()
+    var headerBytes = newSeq[byte](result.hSize)
+    discard s.readData(addr headerBytes[0], result.hSize)
+    if not validateCrc(headerBytes, result.headerCrc):
+        raise newException(IOError, "Possible corrupt replay: Header CRC mismatch")
+    s.setPosition(headerStartPos)
+
   result.majorVersion = uint32.take(s, "header.majorVersion")
   result.minorVersion = uint32.take(s, "header.minorVersion")
 

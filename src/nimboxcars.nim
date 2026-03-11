@@ -2,7 +2,7 @@
 ## Copyright (c) 2026 by Robert J. Renode IV
 
 import std/[parseopt, options]
-import nimboxcars/parser
+import nimboxcars/[parser, crc]
 import nimboxcars/jsonmodel/[flavors, rrrocket_flavor]
 
 export parseReplay, model
