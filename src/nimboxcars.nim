@@ -5,6 +5,8 @@ import std/[parseopt, options]
 import nimboxcars/parser
 import nimboxcars/jsonmodel/[flavors, rrrocket_flavor]
 
+export parseReplay
+
 from std/os import paramCount
 
 const helpText = """
