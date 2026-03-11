@@ -5,7 +5,7 @@ import std/[parseopt, options]
 import nimboxcars/parser
 import nimboxcars/jsonmodel/[flavors, rrrocket_flavor]
 
-export parseReplay
+export parseReplay, model
 
 from std/os import paramCount
 

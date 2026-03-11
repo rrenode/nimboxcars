@@ -7,6 +7,8 @@
 import std/[streams]
 import nimboxcars/[decode, model]
 
+export model
+
 type
   NetworkDataParseMode* = enum
     skipDeserial, skipParsing, getAll
