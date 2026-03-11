@@ -16,6 +16,13 @@ type
 proc validateCrc(data: openArray[byte], expected: uint32): bool =
   result = calcCrc(data) == expected
 
+proc crcSection(s: Stream, size: int, expected: uint32, section: string) =
+  let sectionStart = s.getPosition()
+  var sectionBytes = newSeq[byte](size)
+  discard s.readData(addr sectionBytes[0], size)
+  if not validateCrc(sectionBytes, expected):
+    raise newException(IOError, "Possible corrupt replay: " & section & "CRC mismatch")
+  s.setPosition(sectionStart)
 
 proc parseHeader*(s: Stream, checkCrc: bool = false): ReplayHeader =
   ## Parse replay file stream into ReplayHeader.
@@ -23,12 +30,7 @@ proc parseHeader*(s: Stream, checkCrc: bool = false): ReplayHeader =
   result.headerCrc = uint32.take(s, "header.crc")
 
   if checkCrc:
-    let headerStartPos = s.getPosition()
-    var headerBytes = newSeq[byte](result.hSize)
-    discard s.readData(addr headerBytes[0], result.hSize)
-    if not validateCrc(headerBytes, result.headerCrc):
-        raise newException(IOError, "Possible corrupt replay: Header CRC mismatch")
-    s.setPosition(headerStartPos)
+    crcSection(s, result.hSize, result.headerCrc, "Header")
 
   result.majorVersion = uint32.take(s, "header.majorVersion")
   result.minorVersion = uint32.take(s, "header.minorVersion")
@@ -49,10 +51,14 @@ proc parseHeader*(replayPath: string): ReplayHeader =
 
   result = parseHeader(fs)
 
-proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing): ReplayBody =
+proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing, checkCrc: bool = false): ReplayBody =
   ## Parse continued replay file stream into ReplayBody
   result.contentSize = int32.take(s, "body.contentSize")
   result.contentCrc = uint32.take(s, "body.crc")
+
+  if checkCrc:
+    crcSection(s, result.contentSize, result.contentCrc, "body")
+
   result.levels = FString.takeListOf(s, "body.levels")
   result.keyFrames = KeyFrame.takeListOf(s, "body.keyframes")
   result.networkSize = int32.take(s, "body.netdataSize")
