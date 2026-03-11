@@ -88,12 +88,12 @@ proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseM
   result.classIndices = ClassIndex.takeListOf(s, "body.classIndices")
   result.netCache = NetCache.takeListof(s, "body.netCache")
 
-proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing): Replay =
+proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing, checkCrc: bool = false): Replay =
   ## Opens a replay file and parses it into a Replay.
   var fs: FileStream = newFileStream(replayPath, fmRead)
   if fs.isNil:
     raise newException(IOError, "Cannot open file: " & replayPath)
   defer: fs.close()
 
-  result.header = parseHeader(fs)
-  result.body = parseBody(fs)
+  result.header = parseHeader(fs, checkCrc)
+  result.body = parseBody(fs, netDataMode, checkCrc)
