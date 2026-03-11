@@ -2,7 +2,7 @@
 ## Copyright (c) 2026 by Robert J. Renode IV
 
 import std/[parseopt, options]
-import nimboxcars/[parser, crc]
+import nimboxcars/parser
 import nimboxcars/jsonmodel/[flavors, rrrocket_flavor]
 
 export parseReplay, model
@@ -43,6 +43,9 @@ OPTIONS
                 The raw payload is returned as a byte sequence.
         all     Fully parse and deserialize network data.
 
+  --crc
+      Enforces CRC validation; error if validation fails.
+
   -h, --help
       Show this help message and exit.
 """
@@ -52,6 +55,7 @@ when isMainModule:
   var jsonOutput: bool = false
   var dataFlavor: JsonFlavors = JsonFlavors.rrrocket
   var netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing
+  var checkCrc: bool = false
 
   if paramCount() == 0:
     echo helpText
@@ -92,6 +96,8 @@ when isMainModule:
           echo "Selected netdata mode does not exist: " & val
           echo "Options are: `skip`, `parse`, or `all`"
           quit()
+      of "crc":
+        checkCrc = true
       else:
         echo "Unknown command option of `", key, "`"
         quit()
@@ -102,7 +108,7 @@ when isMainModule:
     echo "Replay file path not provided!"
     quit()
 
-  let replay = parseReplay(replayFilePath.get(), netDataMode)
+  let replay = parseReplay(replayFilePath.get(), netDataMode, checkCrc)
 
   if jsonOutput:
     case dataFlavor:
