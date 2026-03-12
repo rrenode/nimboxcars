@@ -1,33 +1,28 @@
+import nimboxcars/model/network/[attributes, netprims]
+
 type
-  Vector3f* = object
-    x*: float32
-    y*: float32
-    z*: float32
-  
-  Vector3i* = object
-    x*: int32
-    y*: int32
-    z*: int32
-
-  Quaternion* = object
-    x*: float32
-    y*: float32
-    z*: float32
-    w*: float32
-  
-  Rotation* = object
-    yaw*: int8
-    pitch*: int8
-    roll*: int8
-
-  ActorId* = int32
-  StreamId* = int32
-  ObjectId* = int32
-  
-
   UpdatedAttribute* = object
     actorId*: ActorId
-
+    streamId*: StreamId
+    objectId*: ObjectId
+    attribute*: Attribute
 
   SpawnTrajectory* = enum
     none, location, locationAndRotation
+  
+  Trajectory* = object
+    location*: Vector3i
+    rotation*: Rotation
+
+  NewActor* = object
+    actorId*: ActorId
+    nameId*: int32
+    objectId*: ObjectId
+    initalTrajectory*: Trajectory
+
+  Frame* = object
+    time*: float32
+    delta*: float32
+    newActors*: seq[NewActor]
+    deletedActors*: seq[ActorId]
+    updateActors*: seq[UpdatedAttribute]
