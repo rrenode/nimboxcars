@@ -67,16 +67,16 @@ when isMainModule:
       replayFilePath = some(key)
     of cmdLongOption, cmdShortOption:
       case key:
-      of "-h", "--help":
+      of "h", "help":
         echo helpText
         quit()
-      of "j", "--json":
+      of "j", "json":
         if val != "":
           echo "The `-j` option is a flag! Attached value found: " & val
           quit()
         jsonOutput = true
         continue
-      of "--flavor":
+      of "flavor":
         case val:
         of "rrrocket":
           dataFlavor = JsonFlavors.rrrocket
@@ -84,7 +84,7 @@ when isMainModule:
           echo "Selected output flavor does not exist: " & val
           echo "Options are: `rrrocket`"
           quit()
-      of "--netdata":
+      of "netdata":
         case val:
         of "skip":
           netDataMode = NetworkDataParseMode.skipParsing
