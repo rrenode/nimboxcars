@@ -1,5 +1,7 @@
 import nimboxcars/model/network/[attributes, netprims]
 
+export attributes, netprims
+
 type
   UpdatedAttribute* = object
     actorId*: ActorId
