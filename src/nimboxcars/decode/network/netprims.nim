@@ -17,3 +17,17 @@ proc take*(t: typedesc[Quaternion]; s: Stream; what="Qaternion"): Quaternion =
   result.y = float32.take(s, &"{what}.Quaternion.y")
   result.z = float32.take(s, &"{what}.Quaternion.z")
   result.w = float32.take(s, &"{what}.Quaternion.w")
+
+proc take*(t: typedesc[Rotation]; s: Stream; what="Rotation"): Rotation =
+  result.x = int8.take(s, &"{what}.Rotation.yaw")
+  result.y = int8.take(s, &"{what}.Rotation.pitch")
+  result.z = int8.take(s, &"{what}.Rotation.roll")
+
+proc ActorId*(t: typedesc[ActorId]; s: Stream; what="ActorId"): ActorId =
+  result = int32.take(s, &"{what}")
+
+proc StreamId*(t: typedesc[StreamId]; s: Stream; what="StreamId"): StreamId =
+  result = int32.take(s, &"{what}")
+
+proc ObjectId*(t: typedesc[ObjectId]; s: Stream; what="ObjectId"): ObjectId =
+  result = int32.take(s, &"{what}")
