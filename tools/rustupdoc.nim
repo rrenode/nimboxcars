@@ -12,6 +12,11 @@ type
   RustFieldKinds = enum
     rsPrimitive, rsGeneric, rsResolvedPath, rsArray
 
+var processedIds: seq[int]
+
+proc extractStructFieldKind(field: JsonNode): JsonNode
+proc extractStructField(item: JsonNode): JsonNode
+
 proc getObj(n: JsonNode; key: string): JsonNode =
   if n.kind == JObject and n.hasKey(key): n[key] else: newJObject()
 
@@ -29,10 +34,7 @@ proc itemKind(item: JsonNode): RustItemKinds =
   if inner.hasKey("struct"): return rsStruct
   if inner.hasKey("struct_field"): return rsStructField
 
-var trackedFieldIds: seq[int]
-var trackedStructIds: seq[int]
-
-proc extractStruct(index: JsonMap, item: JsonNode): JsonNode =
+proc extractStruct(item: JsonNode): JsonNode =
   ## Extracts a struct while leaving its fields as ids
   let s = item["inner"]["struct"]
   let k = s["kind"]
@@ -47,14 +49,6 @@ proc extractStruct(index: JsonMap, item: JsonNode): JsonNode =
     style = "tuple"
     fields = k["tuple"]
 
-  for f in fields.items:
-    case f.kind
-    of JInt:
-      let v = f.getInt()
-      trackedFieldIds.addUnique v
-    else: discard
-
-  trackedStructIds.addUnique(item["id"].getInt())
   result = %*{
     "id": item["id"],
     "name": item["name"].getStr("unknownName"),
@@ -62,8 +56,17 @@ proc extractStruct(index: JsonMap, item: JsonNode): JsonNode =
     "fields": fields
   }
 
+proc extractStructAndOwned(index: JsonMap, item: JsonNode): JsonNode =
+  ## Extracts a struct and returns with its fields all as sibling
+  result = newJArray()
+  let s = extractStruct(item)
+  result.add s
+  
+  for fieldId in s["fields"]:
+    processedIds.add fieldId.getInt
+    result.add extractStructField(index[$fieldId])
+
 ## Field Stuffs
-proc extractStructFieldKind(field: JsonNode): JsonNode
 
 proc extractBorrowedRef(field: JsonNode): JsonNode =
   if field["type"].hasKey("slice"):
@@ -96,8 +99,6 @@ proc extractArrayField(t: JsonNode): JsonNode =
     }
   }
 
-var trackedResIds: seq[int]
-
 proc extractResolvedPathField(rp: JsonNode): JsonNode =
   var args: JsonNode = newJArray()
   
@@ -109,8 +110,6 @@ proc extractResolvedPathField(rp: JsonNode): JsonNode =
           for arg in innerArgs:
             if arg.hasKey("type"):
               args.add extractStructFieldKind(arg["type"])
-
-  trackedResIds.addUnique(rp["id"].getInt())
 
   if args.len > 0:
     result = %*{
@@ -153,24 +152,18 @@ proc extractStructField(item: JsonNode): JsonNode =
 let doc = parseFile(r"E:\Projects\RLAnalysis\Nimrrrocket\nimboxcars\local\nimboxcarsTools\boxcars.json")
 let index = loadIndex(doc)
 
-let sout = newJArray()
+let sout = newJObject()
 
-for _, item in index:
+for idx, item in index:
+  if sout.hasKey(idx): continue
   case itemKind(item)
   of rsStruct:
-    sout.add extractStruct(index, item)
+    let items = extractStructAndOwned(index, item)
+    for o in items:
+      let oid = $o["id"]
+      processedIds.add oid.parseInt
+      sout[oid] = o
   else:
     discard
-
-for idx in trackedFieldIds:
-  let item = index[$idx]
-  case itemKind(item)
-  of rsStructField: sout.add extractStructField(item)
-  of rsStruct: discard
-  else: discard
-
-for idx in trackedResIds:
-  if idx notin trackedFieldIds and idx notin trackedStructIds:
-    echo idx
 
 writeFile(r"E:\Projects\RLAnalysis\Nimrrrocket\nimboxcars\local\forms.json", pretty(sout))
