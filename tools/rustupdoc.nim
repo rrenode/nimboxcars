@@ -1,176 +1,125 @@
-## Small utility script to go through nimboxcar's rust source to get struct names
-## 
-## 
-import std/[os, osproc, strutils, json, sequtils, tables]
+## Stage 1: rustdoc JSON -> a self-contained, versioned model schema.
+import std/[algorithm, json, strutils]
 
-type
-  JsonMap = Table[string, JsonNode]
+proc fail(message: string) {.noreturn.} =
+  raise newException(ValueError, message)
 
-  RustItemKinds = enum
-    rsUnknown, rsStruct, rsStructField, rsEnum
-  
-  RustFieldKinds = enum
-    rsPrimitive, rsGeneric, rsResolvedPath, rsArray
+proc idKey(n: JsonNode): string =
+  case n.kind
+  of JString: n.getStr
+  of JInt: $n.getInt
+  else: fail("Expected a rustdoc item ID, got " & $n)
 
-var processedIds: seq[int]
-var expectedFieldIds: seq[int]
+proc itemAt(doc: JsonNode, id: JsonNode): JsonNode =
+  let key = idKey(id)
+  if not doc["index"].hasKey(key): fail("Missing rustdoc item " & key)
+  doc["index"][key]
 
-proc extractStructFieldKind(field: JsonNode): JsonNode
-proc extractStructField(item: JsonNode): JsonNode
+proc normalizeType(t: JsonNode, doc: JsonNode): JsonNode =
+  if t.kind != JObject: fail("Invalid Rust type: " & $t)
+  if t.hasKey("primitive"):
+    return %*{"kind": "primitive", "name": t["primitive"]}
+  if t.hasKey("resolved_path"):
+    let p = t["resolved_path"]
+    let id = idKey(p["id"])
+    var path = p{"path"}.getStr(p{"name"}.getStr)
+    if doc.hasKey("paths") and doc["paths"].hasKey(id):
+      var parts: seq[string]
+      for part in doc["paths"][id]["path"]: parts.add part.getStr
+      path = parts.join("::")
+    if path.len == 0: fail("Missing path for type " & id)
+    var args = newJArray()
+    let rawArgs = p{"args"}
+    if not rawArgs.isNil and rawArgs.kind != JNull:
+      if not rawArgs.hasKey("angle_bracketed"):
+        fail("Unsupported generic arguments: " & $p)
+      let angle = rawArgs["angle_bracketed"]
+      if angle{"constraints"}.len > 0: fail("Unsupported type constraints: " & $p)
+      for arg in angle["args"]:
+        if not arg.hasKey("type"): fail("Unsupported generic argument: " & $arg)
+        args.add normalizeType(arg["type"], doc)
+    return %*{"kind": "path", "id": id, "path": path, "args": args}
+  if t.hasKey("array"):
+    let a = t["array"]
+    return %*{"kind": "array", "length": a["len"], "element": normalizeType(a["type"], doc)}
+  if t.hasKey("tuple"):
+    var elements = newJArray()
+    for e in t["tuple"]: elements.add normalizeType(e, doc)
+    return %*{"kind": "tuple", "elements": elements}
+  fail("Unsupported Rust type (cannot convert losslessly): " & $t)
 
-proc getObj(n: JsonNode; key: string): JsonNode =
-  if n.kind == JObject and n.hasKey(key): n[key] else: newJObject()
-
-proc getArr(n: JsonNode; key: string): JsonNode =
-  if n.kind == JObject and n.hasKey(key) and n[key].kind == JArray: n[key] else: newJArray()
-
-proc loadIndex(doc: JsonNode): JsonMap =
-  result = initTable[string, JsonNode]()
-  if doc.kind != JObject or not doc.hasKey("index"): return
-  for k, v in doc["index"]:
-    result[k] = v
-
-proc itemKind(item: JsonNode): RustItemKinds =
-  let inner = getObj(item, "inner")
-  if inner.hasKey("struct"): return rsStruct
-  if inner.hasKey("struct_field"): return rsStructField
-  if inner.hasKey("enum"): return rsEnum
-
-proc extractStruct(item: JsonNode): JsonNode =
-  ## Extracts a struct while leaving its fields as ids
-  let s = item["inner"]["struct"]
-  let k = s["kind"]
-
-  var fields = newJArray()
-  var style = "unknown"
-
-  if k.kind == JObject and k.hasKey("plain"):
-    style = "plain"
-    fields = k["plain"]["fields"]
-  elif k.kind == JObject and k.hasKey("tuple"):
-    style = "tuple"
-    fields = k["tuple"]
-
-  result = %*{
-    "id": item["id"],
-    "name": item["name"].getStr("unknownName"),
-    "style": style,
-    "fields": fields
-  }
-
-proc extractStructAndOwned(index: JsonMap, item: JsonNode): JsonNode =
-  ## Extracts a struct and returns with its fields all as sibling
+proc fields(doc: JsonNode, ids: JsonNode): JsonNode =
   result = newJArray()
-  let s = extractStruct(item)
-  result.add s
-  
-  for fieldId in s["fields"]:
-    expectedFieldIds.addUnique fieldId.getInt
-    if fieldId.getInt in processedIds: continue
-    result.add extractStructField(index[$fieldId])
+  for id in ids:
+    if id.kind == JNull: fail("Stripped tuple field; regenerate rustdoc with private items")
+    let field = itemAt(doc, id)
+    result.add %*{"name": field["name"], "type": normalizeType(field["inner"]["struct_field"], doc)}
 
-## Field Stuffs
+proc shape(doc: JsonNode, k: JsonNode, plainName: string): JsonNode =
+  if k.kind == JString and k.getStr in ["unit", "plain"]:
+    return %*{"style": "unit", "fields": []}
+  if k.kind == JObject and k.hasKey("tuple"):
+    return %*{"style": "tuple", "fields": fields(doc, k["tuple"])}
+  if k.kind == JObject and k.hasKey(plainName):
+    let plain = k[plainName]
+    if plain{"has_stripped_fields"}.getBool:
+      fail("Stripped fields; regenerate rustdoc with private items")
+    return %*{"style": "plain", "fields": fields(doc, plain["fields"])}
+  fail("Unsupported item shape: " & $k)
 
-proc extractBorrowedRef(field: JsonNode): JsonNode =
-  if field["type"].hasKey("slice"):
-    result = %*{
-      "borrowed_ref": {
-        "type": "slice",
-        "kind": extractStructFieldKind(field["type"]["slice"])
-      }
-    }
-  else:
-    result = %*{
-      "borrowed_ref": {
-        "kind": extractStructFieldKind(field["type"])
-      }
-    }
+proc formalize*(doc: JsonNode, modulePrefix = "boxcars::network"): JsonNode =
+  if doc.kind != JObject or not doc.hasKey("index") or not doc.hasKey("paths"):
+    fail("Expected rustdoc JSON with index and paths")
+  let rootCrate = itemAt(doc, doc["root"])["crate_id"]
+  var definitions: seq[JsonNode]
+  for id, item in doc["index"]:
+    if item["crate_id"] != rootCrate: continue
+    let inner = item["inner"]
+    if not (inner.hasKey("struct") or inner.hasKey("enum")): continue
+    if not doc["paths"].hasKey(id): continue
+    var parts: seq[string]
+    for part in doc["paths"][id]["path"]: parts.add part.getStr
+    let path = parts.join("::")
+    if not path.startsWith(modulePrefix & "::"): continue
+    # AttributeTag is crate-private, but belongs to the decoder's model vocabulary.
+    if item["visibility"].getStr != "public" and item["name"].getStr != "AttributeTag": continue
+    let kind = if inner.hasKey("struct"): "struct" else: "enum"
+    let body = inner[kind]
+    if body["generics"]["params"].len > 0 or body["generics"]["where_predicates"].len > 0:
+      fail("Generic declarations are unsupported: " & path)
+    var definition = %*{"id": id, "name": item["name"], "path": path, "kind": kind}
+    if kind == "struct":
+      let s = shape(doc, body["kind"], "plain")
+      definition["style"] = s["style"]
+      definition["fields"] = s["fields"]
+    else:
+      if body{"has_stripped_variants"}.getBool: fail("Stripped variants: " & path)
+      var variants = newJArray()
+      for variantId in body["variants"]:
+        let item = itemAt(doc, variantId)
+        let v = item["inner"]["variant"]
+        var variant = shape(doc, v["kind"], "struct")
+        variant["name"] = item["name"]
+        variant["discriminant"] = v["discriminant"]
+        variants.add variant
+      definition["variants"] = variants
+    definitions.add definition
+  if definitions.len == 0: fail("No model declarations found under " & modulePrefix)
+  definitions.sort(proc(a, b: JsonNode): int = cmp(a["path"].getStr, b["path"].getStr))
+  result = %*{"schemaVersion": 1, "rustdocFormatVersion": doc{"format_version"},
+              "module": modulePrefix, "types": definitions}
 
-proc extractTupleField(t: JsonNode): JsonNode =
-  result = newJArray()
-  for e in t:
-    result.add extractStructFieldKind(e)
-
-proc extractArrayField(t: JsonNode): JsonNode =
-  var kind: JsonNode = newJNull()
-  if t.hasKey("type"):
-    kind = extractStructFieldKind(t["type"])
-  result = %*{
-    "array": {
-      "kind": kind,
-      "len": t["len"].getStr()
-    }
-  }
-
-proc extractResolvedPathField(rp: JsonNode): JsonNode =
-  var args: JsonNode = newJArray()
-  
-  if rp.hasKey("args"):
-    if rp["args"].kind != JNull:
-      if rp["args"].hasKey("angle_bracketed"):
-        if rp["args"]["angle_bracketed"].hasKey("args"):
-          var innerArgs = rp["args"]["angle_bracketed"]["args"]
-          for arg in innerArgs:
-            if arg.hasKey("type"):
-              args.add extractStructFieldKind(arg["type"])
-
-  if args.len > 0:
-    result = %*{
-      "id": rp["id"],
-      "path": rp["path"],
-      "args": args
-    }
-  else:
-    result = %*{
-      "id": rp["id"]
-    }
-
-proc extractStructFieldKind(field: JsonNode): JsonNode =
-  result = newJNull()
-  if field.hasKey("primitive"):
-    result = % ("primitive." & field["primitive"].getStr())
-  elif field.hasKey("generic"):
-    result = % ("generic." & field["generic"].getStr())
-  elif field.hasKey("tuple"):
-    result = extractTupleField(field["tuple"])
-  elif field.hasKey("array"):
-    result = extractArrayField(field["array"])
-  elif field.hasKey("resolved_path"):
-    result = extractResolvedPathField(field["resolved_path"])
-  elif field.hasKey("borrowed_ref"):
-    result = extractBorrowedRef(field["borrowed_ref"])
-    
-proc extractStructField(item: JsonNode): JsonNode =
-  ## Extracts the actual field objects
-  let inner = getObj(item, "inner")
-  let field = inner.getObj("struct_field")
-  #if item["id"].getInt != 435: return %*{}
-  let kk = extractStructFieldKind(field)
-  echo kk
-  result = %*{
-    "id": item["id"],
-    "name": item["name"].getStr("unknownName"),
-    "kind": kk
-  }
-
-
-## Process RustDocUp json into a form we care about
-let doc = parseFile(r"E:\Projects\RLAnalysis\Nimrrrocket\nimboxcars\local\nimboxcarsTools\boxcars.json")
-let index = loadIndex(doc)
-
-let sout = newJObject()
-
-for idx, item in index:
-  if sout.hasKey(idx): continue
-  case itemKind(item)
-  of rsStruct:
-    let items = extractStructAndOwned(index, item)
-    for o in items:
-      let oid = $o["id"]
-      if sout.hasKey(oid): continue
-      processedIds.addUnique oid.parseInt
-      sout[oid] = o
-  else:
-    discard
-
-writeFile(r"E:\Projects\RLAnalysis\Nimrrrocket\nimboxcars\local\forms.json", pretty(sout))
+when isMainModule:
+  import std/os
+  if paramCount() == 1 and paramStr(1) in ["-h", "--help"]:
+    echo "Usage: rustupdoc <rustdoc.json> <forms.json> [module-prefix=boxcars::network]"
+    quit(0)
+  if paramCount() notin 2..3:
+    quit("Usage: rustupdoc <rustdoc.json> <forms.json> [module-prefix=boxcars::network]", 1)
+  try:
+    let prefix = if paramCount() == 3: paramStr(3) else: "boxcars::network"
+    let output = formalize(parseFile(paramStr(1)), prefix)
+    writeFile(paramStr(2), output.pretty & "\n")
+    echo "Wrote ", output["types"].len, " types to ", paramStr(2)
+  except CatchableError as e:
+    quit("rustupdoc: " & e.msg, 1)
