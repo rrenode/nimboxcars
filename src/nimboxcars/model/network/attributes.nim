@@ -363,11 +363,8 @@ type
     value*: uint32
 
   PickupInfo* = object
-    active*: bool
-    actor*: ActorId
+    availablePickups*: array[3, ActiveActor]
     itemsArePreview*: bool
-    unknown*: bool
-    unknown2*: bool
 
   Impulse* = object
     compressedRotation*: int32

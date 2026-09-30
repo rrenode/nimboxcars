@@ -1,5 +1,5 @@
 ## Small utility script to go through nimboxcar's rust source to get struct names
-## Only made for network.
+## 
 ## 
 import std/[os, osproc, strutils, json, sequtils, tables]
 
@@ -13,6 +13,7 @@ type
     rsPrimitive, rsGeneric, rsResolvedPath, rsArray
 
 var processedIds: seq[int]
+var expectedFieldIds: seq[int]
 
 proc extractStructFieldKind(field: JsonNode): JsonNode
 proc extractStructField(item: JsonNode): JsonNode
@@ -33,6 +34,7 @@ proc itemKind(item: JsonNode): RustItemKinds =
   let inner = getObj(item, "inner")
   if inner.hasKey("struct"): return rsStruct
   if inner.hasKey("struct_field"): return rsStructField
+  if inner.hasKey("enum"): return rsEnum
 
 proc extractStruct(item: JsonNode): JsonNode =
   ## Extracts a struct while leaving its fields as ids
@@ -63,7 +65,8 @@ proc extractStructAndOwned(index: JsonMap, item: JsonNode): JsonNode =
   result.add s
   
   for fieldId in s["fields"]:
-    processedIds.add fieldId.getInt
+    expectedFieldIds.addUnique fieldId.getInt
+    if fieldId.getInt in processedIds: continue
     result.add extractStructField(index[$fieldId])
 
 ## Field Stuffs
@@ -114,6 +117,7 @@ proc extractResolvedPathField(rp: JsonNode): JsonNode =
   if args.len > 0:
     result = %*{
       "id": rp["id"],
+      "path": rp["path"],
       "args": args
     }
   else:
@@ -140,11 +144,13 @@ proc extractStructField(item: JsonNode): JsonNode =
   ## Extracts the actual field objects
   let inner = getObj(item, "inner")
   let field = inner.getObj("struct_field")
-
+  #if item["id"].getInt != 435: return %*{}
+  let kk = extractStructFieldKind(field)
+  echo kk
   result = %*{
     "id": item["id"],
     "name": item["name"].getStr("unknownName"),
-    "kind": extractStructFieldKind(field)
+    "kind": kk
   }
 
 
@@ -161,7 +167,8 @@ for idx, item in index:
     let items = extractStructAndOwned(index, item)
     for o in items:
       let oid = $o["id"]
-      processedIds.add oid.parseInt
+      if sout.hasKey(oid): continue
+      processedIds.addUnique oid.parseInt
       sout[oid] = o
   else:
     discard
