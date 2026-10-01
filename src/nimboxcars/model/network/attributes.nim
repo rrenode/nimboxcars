@@ -3,15 +3,288 @@ import std/options
 export options
 
 type
+  `ActorId`* = distinct int32
+
   `ActiveActor`* = object
     `active`*: bool
     `actor`*: `ActorId`
+
+  `Vector3f`* = object
+    `x`*: float32
+    `y`*: float32
+    `z`*: float32
 
   `AppliedDamage`* = object
     `id`*: uint8
     `position`*: `Vector3f`
     `damageIndex`*: int32
     `totalDamage`*: int32
+
+  `DamageState`* = object
+    `tileState`*: uint8
+    `damaged`*: bool
+    `offender`*: `ActorId`
+    `ballPosition`*: `Vector3f`
+    `directHit`*: bool
+    `unknown1`*: bool
+
+  `CamSettings`* = object
+    `fov`*: float32
+    `height`*: float32
+    `angle`*: float32
+    `distance`*: float32
+    `stiffness`*: float32
+    `swivel`*: float32
+    `transition`*: Option[float32]
+
+  `ClubColors`* = object
+    `blueFlag`*: bool
+    `blueColor`*: uint8
+    `orangeFlag`*: bool
+    `orangeColor`*: uint8
+
+  `Demolish`* = object
+    `attackerFlag`*: bool
+    `attacker`*: `ActorId`
+    `victimFlag`*: bool
+    `victim`*: `ActorId`
+    `attackVelocity`*: `Vector3f`
+    `victimVelocity`*: `Vector3f`
+
+  `DemolishExtended`* = object
+    `attackerPri`*: `ActiveActor`
+    `selfDemo`*: `ActiveActor`
+    `selfDemolish`*: bool
+    `goalExplosionOwner`*: `ActiveActor`
+    `attacker`*: `ActiveActor`
+    `victim`*: `ActiveActor`
+    `attackerVelocity`*: `Vector3f`
+    `victimVelocity`*: `Vector3f`
+
+  `DemolishFx`* = object
+    `customDemoFlag`*: bool
+    `customDemoId`*: int32
+    `attackerFlag`*: bool
+    `attacker`*: `ActorId`
+    `victimFlag`*: bool
+    `victim`*: `ActorId`
+    `attackVelocity`*: `Vector3f`
+    `victimVelocity`*: `Vector3f`
+
+  `Explosion`* = object
+    `flag`*: bool
+    `actor`*: `ActorId`
+    `location`*: `Vector3f`
+
+  `ExtendedExplosion`* = object
+    `explosion`*: `Explosion`
+    `unknown1`*: bool
+    `secondaryActor`*: `ActorId`
+
+  `Loadout`* = object
+    `version`*: uint8
+    `body`*: uint32
+    `decal`*: uint32
+    `wheels`*: uint32
+    `rocketTrail`*: uint32
+    `antenna`*: uint32
+    `topper`*: uint32
+    `unknown1`*: uint32
+    `unknown2`*: Option[uint32]
+    `engineAudio`*: Option[uint32]
+    `trail`*: Option[uint32]
+    `goalExplosion`*: Option[uint32]
+    `banner`*: Option[uint32]
+    `productId`*: Option[uint32]
+
+  `TeamLoadout`* = object
+    `blue`*: `Loadout`
+    `orange`*: `Loadout`
+
+  `MusicStinger`* = object
+    `flag`*: bool
+    `cue`*: uint32
+    `trigger`*: uint8
+
+  `Pickup`* = object
+    `instigator`*: Option[`ActorId`]
+    `pickedUp`*: bool
+
+  `PickupNew`* = object
+    `instigator`*: Option[`ActorId`]
+    `pickedUp`*: uint8
+
+  `Rotation`* = object
+    `yaw`*: Option[int8]
+    `pitch`*: Option[int8]
+    `roll`*: Option[int8]
+
+  `Welded`* = object
+    `active`*: bool
+    `actor`*: `ActorId`
+    `offset`*: `Vector3f`
+    `mass`*: float32
+    `rotation`*: `Rotation`
+
+  `TeamPaint`* = object
+    `team`*: uint8
+    `primaryColor`*: uint8
+    `accentColor`*: uint8
+    `primaryFinish`*: uint32
+    `accentFinish`*: uint32
+
+  `Quaternion`* = object
+    `x`*: float32
+    `y`*: float32
+    `z`*: float32
+    `w`*: float32
+
+  `RigidBody`* = object
+    `sleeping`*: bool
+    `location`*: `Vector3f`
+    `rotation`*: `Quaternion`
+    `linearVelocity`*: Option[`Vector3f`]
+    `angularVelocity`*: Option[`Vector3f`]
+
+  `Ps4Id`* = object
+    `onlineId`*: uint64
+    `name`*: string
+    `unknown1`*: seq[uint8]
+
+  `PsyNetId`* = object
+    `onlineId`*: uint64
+    `unknown1`*: seq[uint8]
+
+  `SwitchId`* = object
+    `onlineId`*: uint64
+    `unknown1`*: seq[uint8]
+
+  `RemoteIdKind`* {.pure.} = enum
+    `PlayStation`
+    `PsyNet`
+    `SplitScreen`
+    `Steam`
+    `Switch`
+    `Xbox`
+    `QQ`
+    `Epic`
+
+  `RemoteId`* = object
+    case kind*: `RemoteIdKind`
+    of `RemoteIdKind`.`PlayStation`:
+      `playStationValue`*: `Ps4Id`
+    of `RemoteIdKind`.`PsyNet`:
+      `psyNetValue`*: `PsyNetId`
+    of `RemoteIdKind`.`SplitScreen`:
+      `splitScreenValue`*: uint32
+    of `RemoteIdKind`.`Steam`:
+      `steamValue`*: uint64
+    of `RemoteIdKind`.`Switch`:
+      `switchValue`*: `SwitchId`
+    of `RemoteIdKind`.`Xbox`:
+      `xboxValue`*: uint64
+    of `RemoteIdKind`.`QQ`:
+      `qQValue`*: uint64
+    of `RemoteIdKind`.`Epic`:
+      `epicValue`*: string
+
+  `UniqueId`* = object
+    `systemId`*: uint8
+    `remoteId`*: `RemoteId`
+    `localId`*: uint8
+
+  `Reservation`* = object
+    `number`*: uint32
+    `uniqueId`*: `UniqueId`
+    `name`*: Option[string]
+    `unknown1`*: bool
+    `unknown2`*: bool
+    `unknown3`*: Option[uint8]
+
+  `PrivateMatchSettings`* = object
+    `mutators`*: string
+    `joinableBy`*: uint32
+    `maxPlayers`*: uint32
+    `gameName`*: string
+    `password`*: string
+    `flag`*: bool
+
+  `ObjectId`* = distinct int32
+
+  `ProductValueKind`* {.pure.} = enum
+    `NoColor`
+    `Absent`
+    `OldColor`
+    `NewColor`
+    `OldPaint`
+    `NewPaint`
+    `Title`
+    `SpecialEdition`
+    `OldTeamEdition`
+    `NewTeamEdition`
+
+  `ProductValue`* = object
+    case kind*: `ProductValueKind`
+    of `ProductValueKind`.`NoColor`:
+      discard
+    of `ProductValueKind`.`Absent`:
+      discard
+    of `ProductValueKind`.`OldColor`:
+      `oldColorValue`*: uint32
+    of `ProductValueKind`.`NewColor`:
+      `newColorValue`*: uint32
+    of `ProductValueKind`.`OldPaint`:
+      `oldPaintValue`*: uint32
+    of `ProductValueKind`.`NewPaint`:
+      `newPaintValue`*: uint32
+    of `ProductValueKind`.`Title`:
+      `titleValue`*: string
+    of `ProductValueKind`.`SpecialEdition`:
+      `specialEditionValue`*: uint32
+    of `ProductValueKind`.`OldTeamEdition`:
+      `oldTeamEditionValue`*: uint32
+    of `ProductValueKind`.`NewTeamEdition`:
+      `newTeamEditionValue`*: uint32
+
+  `Product`* = object
+    `unknown`*: bool
+    `objectInd`*: `ObjectId`
+    `value`*: `ProductValue`
+
+  `LoadoutsOnline`* = object
+    `blue`*: seq[seq[`Product`]]
+    `orange`*: seq[seq[`Product`]]
+    `unknown1`*: bool
+    `unknown2`*: bool
+
+  `StatEvent`* = object
+    `unknown1`*: bool
+    `objectId`*: int32
+
+  `RepStatTitle`* = object
+    `unknown`*: bool
+    `name`*: string
+    `unknown2`*: bool
+    `index`*: uint32
+    `value`*: uint32
+
+  `PickupInfo`* = object
+    `availablePickups`*: array[3, `ActiveActor`]
+    `itemsArePreview`*: bool
+
+  `Impulse`* = object
+    `compressedRotation`*: int32
+    `speed`*: float32
+
+  `ReplicatedBoost`* = object
+    `grantCount`*: uint8
+    `boostAmount`*: uint8
+    `unused1`*: uint8
+    `unused2`*: uint8
+
+  `LogoData`* = object
+    `logoId`*: uint32
+    `swapColors`*: bool
 
   `AttributeKind`* {.pure.} = enum
     `Boolean`
@@ -197,260 +470,28 @@ type
     `ReplicatedBoost`
     `LogoData`
 
-  `CamSettings`* = object
-    `fov`*: float32
-    `height`*: float32
-    `angle`*: float32
-    `distance`*: float32
-    `stiffness`*: float32
-    `swivel`*: float32
-    `transition`*: Option[float32]
+  `Vector3i`* = object
+    `x`*: int32
+    `y`*: int32
+    `z`*: int32
 
-  `ClubColors`* = object
-    `blueFlag`*: bool
-    `blueColor`*: uint8
-    `orangeFlag`*: bool
-    `orangeColor`*: uint8
+  `Trajectory`* = object
+    `location`*: Option[`Vector3i`]
+    `rotation`*: Option[`Rotation`]
 
-  `DamageState`* = object
-    `tileState`*: uint8
-    `damaged`*: bool
-    `offender`*: `ActorId`
-    `ballPosition`*: `Vector3f`
-    `directHit`*: bool
-    `unknown1`*: bool
+  `NewActor`* = object
+    `actorId`*: `ActorId`
+    `nameId`*: Option[int32]
+    `objectId`*: `ObjectId`
+    `initialTrajectory`*: `Trajectory`
 
-  `Demolish`* = object
-    `attackerFlag`*: bool
-    `attacker`*: `ActorId`
-    `victimFlag`*: bool
-    `victim`*: `ActorId`
-    `attackVelocity`*: `Vector3f`
-    `victimVelocity`*: `Vector3f`
+  `StreamId`* = distinct int32
 
-  `DemolishExtended`* = object
-    `attackerPri`*: `ActiveActor`
-    `selfDemo`*: `ActiveActor`
-    `selfDemolish`*: bool
-    `goalExplosionOwner`*: `ActiveActor`
-    `attacker`*: `ActiveActor`
-    `victim`*: `ActiveActor`
-    `attackerVelocity`*: `Vector3f`
-    `victimVelocity`*: `Vector3f`
-
-  `DemolishFx`* = object
-    `customDemoFlag`*: bool
-    `customDemoId`*: int32
-    `attackerFlag`*: bool
-    `attacker`*: `ActorId`
-    `victimFlag`*: bool
-    `victim`*: `ActorId`
-    `attackVelocity`*: `Vector3f`
-    `victimVelocity`*: `Vector3f`
-
-  `Explosion`* = object
-    `flag`*: bool
-    `actor`*: `ActorId`
-    `location`*: `Vector3f`
-
-  `ExtendedExplosion`* = object
-    `explosion`*: `Explosion`
-    `unknown1`*: bool
-    `secondaryActor`*: `ActorId`
-
-  `Impulse`* = object
-    `compressedRotation`*: int32
-    `speed`*: float32
-
-  `Loadout`* = object
-    `version`*: uint8
-    `body`*: uint32
-    `decal`*: uint32
-    `wheels`*: uint32
-    `rocketTrail`*: uint32
-    `antenna`*: uint32
-    `topper`*: uint32
-    `unknown1`*: uint32
-    `unknown2`*: Option[uint32]
-    `engineAudio`*: Option[uint32]
-    `trail`*: Option[uint32]
-    `goalExplosion`*: Option[uint32]
-    `banner`*: Option[uint32]
-    `productId`*: Option[uint32]
-
-  `LoadoutsOnline`* = object
-    `blue`*: seq[seq[`Product`]]
-    `orange`*: seq[seq[`Product`]]
-    `unknown1`*: bool
-    `unknown2`*: bool
-
-  `LogoData`* = object
-    `logoId`*: uint32
-    `swapColors`*: bool
-
-  `MusicStinger`* = object
-    `flag`*: bool
-    `cue`*: uint32
-    `trigger`*: uint8
-
-  `Pickup`* = object
-    `instigator`*: Option[`ActorId`]
-    `pickedUp`*: bool
-
-  `PickupInfo`* = object
-    `availablePickups`*: array[3, `ActiveActor`]
-    `itemsArePreview`*: bool
-
-  `PickupNew`* = object
-    `instigator`*: Option[`ActorId`]
-    `pickedUp`*: uint8
-
-  `PrivateMatchSettings`* = object
-    `mutators`*: string
-    `joinableBy`*: uint32
-    `maxPlayers`*: uint32
-    `gameName`*: string
-    `password`*: string
-    `flag`*: bool
-
-  `Product`* = object
-    `unknown`*: bool
-    `objectInd`*: `ObjectId`
-    `value`*: `ProductValue`
-
-  `ProductValueKind`* {.pure.} = enum
-    `NoColor`
-    `Absent`
-    `OldColor`
-    `NewColor`
-    `OldPaint`
-    `NewPaint`
-    `Title`
-    `SpecialEdition`
-    `OldTeamEdition`
-    `NewTeamEdition`
-
-  `ProductValue`* = object
-    case kind*: `ProductValueKind`
-    of `ProductValueKind`.`NoColor`:
-      discard
-    of `ProductValueKind`.`Absent`:
-      discard
-    of `ProductValueKind`.`OldColor`:
-      `oldColorValue`*: uint32
-    of `ProductValueKind`.`NewColor`:
-      `newColorValue`*: uint32
-    of `ProductValueKind`.`OldPaint`:
-      `oldPaintValue`*: uint32
-    of `ProductValueKind`.`NewPaint`:
-      `newPaintValue`*: uint32
-    of `ProductValueKind`.`Title`:
-      `titleValue`*: string
-    of `ProductValueKind`.`SpecialEdition`:
-      `specialEditionValue`*: uint32
-    of `ProductValueKind`.`OldTeamEdition`:
-      `oldTeamEditionValue`*: uint32
-    of `ProductValueKind`.`NewTeamEdition`:
-      `newTeamEditionValue`*: uint32
-
-  `Ps4Id`* = object
-    `onlineId`*: uint64
-    `name`*: string
-    `unknown1`*: seq[uint8]
-
-  `PsyNetId`* = object
-    `onlineId`*: uint64
-    `unknown1`*: seq[uint8]
-
-  `RemoteIdKind`* {.pure.} = enum
-    `PlayStation`
-    `PsyNet`
-    `SplitScreen`
-    `Steam`
-    `Switch`
-    `Xbox`
-    `QQ`
-    `Epic`
-
-  `RemoteId`* = object
-    case kind*: `RemoteIdKind`
-    of `RemoteIdKind`.`PlayStation`:
-      `playStationValue`*: `Ps4Id`
-    of `RemoteIdKind`.`PsyNet`:
-      `psyNetValue`*: `PsyNetId`
-    of `RemoteIdKind`.`SplitScreen`:
-      `splitScreenValue`*: uint32
-    of `RemoteIdKind`.`Steam`:
-      `steamValue`*: uint64
-    of `RemoteIdKind`.`Switch`:
-      `switchValue`*: `SwitchId`
-    of `RemoteIdKind`.`Xbox`:
-      `xboxValue`*: uint64
-    of `RemoteIdKind`.`QQ`:
-      `qQValue`*: uint64
-    of `RemoteIdKind`.`Epic`:
-      `epicValue`*: string
-
-  `RepStatTitle`* = object
-    `unknown`*: bool
-    `name`*: string
-    `unknown2`*: bool
-    `index`*: uint32
-    `value`*: uint32
-
-  `ReplicatedBoost`* = object
-    `grantCount`*: uint8
-    `boostAmount`*: uint8
-    `unused1`*: uint8
-    `unused2`*: uint8
-
-  `Reservation`* = object
-    `number`*: uint32
-    `uniqueId`*: `UniqueId`
-    `name`*: Option[string]
-    `unknown1`*: bool
-    `unknown2`*: bool
-    `unknown3`*: Option[uint8]
-
-  `RigidBody`* = object
-    `sleeping`*: bool
-    `location`*: `Vector3f`
-    `rotation`*: `Quaternion`
-    `linearVelocity`*: Option[`Vector3f`]
-    `angularVelocity`*: Option[`Vector3f`]
-
-  `StatEvent`* = object
-    `unknown1`*: bool
-    `objectId`*: int32
-
-  `SwitchId`* = object
-    `onlineId`*: uint64
-    `unknown1`*: seq[uint8]
-
-  `TeamLoadout`* = object
-    `blue`*: `Loadout`
-    `orange`*: `Loadout`
-
-  `TeamPaint`* = object
-    `team`*: uint8
-    `primaryColor`*: uint8
-    `accentColor`*: uint8
-    `primaryFinish`*: uint32
-    `accentFinish`*: uint32
-
-  `UniqueId`* = object
-    `systemId`*: uint8
-    `remoteId`*: `RemoteId`
-    `localId`*: uint8
-
-  `Welded`* = object
-    `active`*: bool
-    `actor`*: `ActorId`
-    `offset`*: `Vector3f`
-    `mass`*: float32
-    `rotation`*: `Rotation`
-
-  `ActorId`* = distinct int32
+  `UpdatedAttribute`* = object
+    `actorId`*: `ActorId`
+    `streamId`*: `StreamId`
+    `objectId`*: `ObjectId`
+    `attribute`*: `Attribute`
 
   `Frame`* = object
     `time`*: float32
@@ -459,49 +500,8 @@ type
     `deletedActors`*: seq[`ActorId`]
     `updatedActors`*: seq[`UpdatedAttribute`]
 
-  `NewActor`* = object
-    `actorId`*: `ActorId`
-    `nameId`*: Option[int32]
-    `objectId`*: `ObjectId`
-    `initialTrajectory`*: `Trajectory`
-
-  `ObjectId`* = distinct int32
-
-  `Quaternion`* = object
-    `x`*: float32
-    `y`*: float32
-    `z`*: float32
-    `w`*: float32
-
-  `Rotation`* = object
-    `yaw`*: Option[int8]
-    `pitch`*: Option[int8]
-    `roll`*: Option[int8]
-
   `SpawnTrajectory`* {.pure.} = enum
     `None`
     `Location`
     `LocationAndRotation`
-
-  `StreamId`* = distinct int32
-
-  `Trajectory`* = object
-    `location`*: Option[`Vector3i`]
-    `rotation`*: Option[`Rotation`]
-
-  `UpdatedAttribute`* = object
-    `actorId`*: `ActorId`
-    `streamId`*: `StreamId`
-    `objectId`*: `ObjectId`
-    `attribute`*: `Attribute`
-
-  `Vector3f`* = object
-    `x`*: float32
-    `y`*: float32
-    `z`*: float32
-
-  `Vector3i`* = object
-    `x`*: int32
-    `y`*: int32
-    `z`*: int32
 

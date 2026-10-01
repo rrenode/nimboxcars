@@ -1,6 +1,6 @@
-import nimboxcars/model/[body, props, strings]
+import nimboxcars/model/[body, props, strings, network]
 
-export body, props, strings
+export body, props, strings, network
 
 type
   ReplayHeader* = object
@@ -19,6 +19,7 @@ type
     keyFrames*: seq[KeyFrame]
     networkSize*: int32
     networkData*: seq[byte]
+    networkFrames*: Option[NetworkFrames]
     debugInfo*: seq[DebugInfo]
     tickMarks*: seq[TickMark]
     packages*: seq[FString]

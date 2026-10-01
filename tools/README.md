@@ -74,7 +74,9 @@ AttributeKind.FlaggedByte, flaggedByteValue: (true, 1'u8))`. Multiple payload
 values use named tuples. Unit variants have no payload. `AttributeKind` describes
 actual payloads and is intentionally separate from Rust's decoder `AttributeTag`.
 
-Declarations share one `type` block so forward references resolve. Identifiers
+Declarations share one `type` block and are ordered by dependency. This avoids
+incorrect shallow copies of managed payloads with Nim 2.2's forward references.
+Recursive model dependencies are rejected. Identifiers
 are escaped and collisions are rejected. `options` is re-exported for callers.
 This preserves model values and optionality, not Rust ABI, ownership, or serde
 serialization behavior. No missing newer upstream fields are invented.

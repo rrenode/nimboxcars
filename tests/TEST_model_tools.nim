@@ -38,7 +38,8 @@ proc fixture(): JsonNode =
   field(22, "available_pickups", %*{"array": {"len": "3", "type": pathType(10, "ActorId")}})
   field(23, "products", pathType(901, "Vec", pathType(901, "Vec", primitive("u32"))))
   field(24, "type", pathType(903, "String"))
-  structure(20, "Settings", %*{"plain": {"fields": [21, 22, 23, 24], "has_stripped_fields": false}})
+  field(25, "managed_products", pathType(901, "Vec", pathType(901, "Vec", pathType(80, "Product"))))
+  structure(20, "Settings", %*{"plain": {"fields": [21, 22, 23, 24, 25], "has_stripped_fields": false}})
   variant(31, "None", %"plain")
   field(35, "0", primitive("bool"))
   field(36, "1", primitive("u8"))
@@ -57,13 +58,19 @@ proc fixture(): JsonNode =
   structure(60, "Pair", %*{"tuple": [61, 62]})
   structure(70, "PrivateDecoder", %"unit")
   doc["index"]["70"]["visibility"] = %"crate"
+  field(81, "value", pathType(90, "ProductValue"))
+  structure(80, "Product", %*{"plain": {"fields": [81], "has_stripped_fields": false}})
+  variant(91, "Absent", %"plain")
+  field(93, "0", pathType(903, "String"))
+  variant(92, "Title", %*{"tuple": [93]})
+  enumeration(90, "ProductValue", @[91, 92])
 
 proc checkProgram(models, program: string) =
   let directory = createTempDir("nimboxcars-models-", "")
   defer: removeDir(directory)
   writeFile(directory / "generated_models.nim", models)
   writeFile(directory / "exercise.nim", "import generated_models\n" & program)
-  let command = quoteShell(findExe("nim")) & " c -r --hints:off --nimcache:" &
+  let command = quoteShell(findExe("nim")) & " c -r --hints:off --mm:orc --nimcache:" &
       quoteShell(directory / "cache") & " --out:" & quoteShell(directory / "exercise.exe") &
       " " & quoteShell(directory / "exercise.nim")
   let execution = execCmdEx(command)
@@ -73,7 +80,7 @@ proc checkProgram(models, program: string) =
 suite "rustdoc model conversion":
   test "generated models compile and preserve usable payloads and presence":
     let forms = formalize(fixture())
-    check forms["types"].len == 6
+    check forms["types"].len == 8
     checkProgram(generateNim(forms), """
 var settings = Settings(transition: some(0'f32), `type`: "test")
 doAssert settings.transition.isSome
@@ -99,6 +106,15 @@ let pair = Pair(field0: 3, field1: (true, -2'i16))
 doAssert pair.field1.field1 == -2
 discard Empty()
 discard AttributeTag.Boolean
+proc checkCopies() =
+  var original = @[Product(value: ProductValue(kind: ProductValueKind.Title,
+    titleValue: newString(128)))]
+  original[0].value.titleValue[0] = 'A'
+  var copied = original
+  copied[0].value.titleValue[0] = 'B'
+  doAssert copied[0].value.titleValue[0] == 'B'
+  doAssert original[0].value.titleValue[0] == 'A'
+for i in 0 .. 100: checkCopies()
 """)
 
   test "index order does not affect output":

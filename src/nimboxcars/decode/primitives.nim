@@ -101,6 +101,8 @@ proc take*(t: typedesc[float32], s: Stream, what = "float32"): float32 =
     raise newException(IOError, &"EOF while reading {what} at offset {pos}: {e.msg}")
 
 proc takeBytes*(s: Stream; n: int): seq[byte] =
+  if n < 0: raise newException(IOError, "Negative byte count")
+  if n == 0: return @[]
   result = newSeq[byte](n)
   let read = s.readData(addr result[0], n)
   if read != n:

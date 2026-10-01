@@ -22,6 +22,8 @@
 
 import json_serialization
 import nimboxcars/model
+import nimboxcars/jsonmodel/network
+import std/json as stdjson
 
 export json_serialization
 
@@ -109,10 +111,7 @@ proc writeValue*(w: var JsonWriter[RRRocketFlavor], v: Replay)
 
   w.writeField("content_size", v.body.contentSize)
   w.writeField("content_crc", v.body.contentCrc)
-  if v.body.networkData.len == 0:
-    w.writeField("network_frames", JsonString("null"))
-  else:
-    w.writeField("network_frames", v.body.networkData)
+  w.writeField("network_frames", JsonString($networkJson(v.body.networkFrames)))
   w.writeField("levels", v.body.levels)
   w.writeField("keyframes", v.body.keyFrames)
   w.writeField("debug_info", v.body.debugInfo)

@@ -38,9 +38,41 @@ NimBoxCars is currently an infant. As such it lacks quite a bit of functionality
 
 As a **lib**, NimBoxCars provides object types (most notably the Replay object). It also provides binary step-reading procs for replay files' data types. There's far too much in the lib to go over here in the readme so please see TODO:LibDocs.
 
-In terms of **parsing**, the entire header, including the header's properties, are parsed and serialized as NimBoxCar's object types. Have also completed parsing most of the body; but not the network data.
+In terms of **parsing**, the header, body, and network frames are decoded into Nim objects. Network decoding follows the local boxcars 0.10.11 snapshot, including actor creation, updates, deletion, and version-dependent attribute layouts. Newer wire formats may require updated models and decoders.
 
-As a **CLI**, it only outputs the string representation of NimBoxCar's Replay object type.
+To decode network frames from the library:
+
+```nim
+import nimboxcars/parser
+
+let replay = parseReplay("match.replay", getAll, checkCrc = true)
+let frames = replay.body.networkFrames.get.frames
+```
+
+`skipParsing` skips network bytes; `skipDeserial` retains raw network bytes;
+`getAll` also decodes frames. To decode a previously loaded raw replay, call
+`decodeNetwork(replay.header, replay.body)`. Invalid or unsupported network data
+raises `NetworkDecodeError` with decoding context.
+
+The CLI supports `--netdata:all --json match.replay` for JSON with decoded
+`network_frames`. Without decoding, that JSON field is null. Network JSON uses
+boxcars's tagged variants, snake_case fields, and strings for 64-bit integers.
+
+Run the decoder regression tests with:
+
+```powershell
+nim c -r --path:src tests/TEST_network.nim
+```
+
+With rrrocket 0.10.11 installed, compare every network field in the replay fixtures:
+
+```powershell
+nim c -d:release --path:src --out:bin/debug/nimboxcars-network.exe src/nimboxcars.nim
+python tests/compare_network.py --nim bin/debug/nimboxcars-network.exe
+```
+
+The comparison permits small floating-point rounding differences (2e-6 relative
+or absolute tolerance); other values must match exactly.
 
 
 # A HUGE THANK YOU TO

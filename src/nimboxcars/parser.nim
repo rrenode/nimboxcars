@@ -3,11 +3,13 @@
 ## Instrumental in writing this was tanrbobanr's documentation of the RL replay binary structure.
 ##  https://github.com/tanrbobanr/rocket-league-replay-format/blob/main/rpdoc_generated.md
 ## Additionally, boxcars (a rust RL replay lib) served to help me avoid reverse-engineering more modern RL replay formats.
-## Fun fact: Modern replay formats have StructProperty!
+## Fun fact: Modern replay formats have StructProperty! <-- boy was that headache I missed for too long!
 import std/[streams]
 import nimboxcars/[decode, model, crc]
+import nimboxcars/decode/network/netparse
 
 export model
+export netparse.decodeNetwork, netparse.NetworkDecodeError
 
 type
   NetworkDataParseMode* = enum
@@ -35,7 +37,7 @@ proc parseHeader*(s: Stream, checkCrc: bool = false): ReplayHeader =
   result.majorVersion = uint32.take(s, "header.majorVersion")
   result.minorVersion = uint32.take(s, "header.minorVersion")
 
-  if result.majorVersion > 865'u32 and result.minorVersion > 17'u32:
+  if (result.majorVersion, result.minorVersion) >= (868'u32, 18'u32):
     result.netVersion = uint32.take(s, "header.netVersion")
   else:
     result.netVersion = 0'u32
@@ -51,8 +53,11 @@ proc parseHeader*(replayPath: string): ReplayHeader =
 
   result = parseHeader(fs)
 
-proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing, checkCrc: bool = false): ReplayBody =
+proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing,
+                checkCrc: bool = false, header: Option[ReplayHeader] = none(ReplayHeader)): ReplayBody =
   ## Parse continued replay file stream into ReplayBody
+  if netDataMode == NetworkDataParseMode.getAll and header.isNone:
+    raise newException(ValueError, "parseBody(getAll) requires header = some(parsedHeader)")
   result.contentSize = int32.take(s, "body.contentSize")
   result.contentCrc = uint32.take(s, "body.crc")
 
@@ -62,6 +67,7 @@ proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseM
   result.levels = FString.takeListOf(s, "body.levels")
   result.keyFrames = KeyFrame.takeListOf(s, "body.keyframes")
   result.networkSize = int32.take(s, "body.netdataSize")
+  if result.networkSize < 0: raise newException(IOError, "Negative network data size")
 
   proc skipNetdata(networkSize: int32) =
     ## Just for easier reading since I reuse this logic for now
@@ -76,9 +82,8 @@ proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseM
     # Skips network data entirely
     skipNetdata(result.networkSize)
   of NetworkDataParseMode.getAll:
-    # Parses and Deserializes all of netdata
-    echo "NetworkDataPaseMode `getAll` is not yet implemented... skipping network data."
-    skipNetdata(result.networkSize)
+    # Tables following the payload are required before decoding its bits.
+    result.networkData = takeBytes(s, result.networkSize)
 
   result.debugInfo = DebugInfo.takeListOf(s, "body.debugInfo")
   result.tickMarks = TickMark.takeListOf(s, "body.tickMarks")
@@ -87,6 +92,8 @@ proc parseBody*(s: Stream, netDataMode: NetworkDataParseMode = NetworkDataParseM
   result.names = FString.takeListOf(s, "body.names")
   result.classIndices = ClassIndex.takeListOf(s, "body.classIndices")
   result.netCache = NetCache.takeListof(s, "body.netCache")
+  if netDataMode == NetworkDataParseMode.getAll:
+    result.networkFrames = some(decodeNetwork(header.get, result))
 
 proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = NetworkDataParseMode.skipParsing, checkCrc: bool = false): Replay =
   ## Opens a replay file and parses it into a Replay.
@@ -96,4 +103,4 @@ proc parseReplay*(replayPath: string; netDataMode: NetworkDataParseMode = Networ
   defer: fs.close()
 
   result.header = parseHeader(fs, checkCrc)
-  result.body = parseBody(fs, netDataMode, checkCrc)
+  result.body = parseBody(fs, netDataMode, checkCrc, some(result.header))
