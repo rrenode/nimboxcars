@@ -2,20 +2,28 @@
   <a href="https://nim-lang.org/">
     <img alt="Nim" src="https://img.shields.io/badge/Nim-FFE953?style=for-the-badge&logo=nim&logoColor=black" />
   </a>
-  <a href="#">
-    <img alt="Zero Deps" src="https://img.shields.io/badge/zero-dependencies-brightgreen?style=for-the-badge" />
-  </a>
-  <a href="https://github.com/<rrenode/nimboxcars/issues">
-    <img alt="WIP" src="https://img.shields.io/badge/under-construction-orange?style=for-the-badge" />
-  </a>
 </p>
 
 # NimBoxCars
-NimBoxCars is a [Rocket League](http://www.rocketleaguegame.com/) replay parser library in Nim.
+NimBoxCars is a [Rocket League](http://www.rocketleaguegame.com/) replay parser library and tool written in Nim.
 
+## Tool Usage
 
-## Roadmap
+Download the binary from the releases page. Rocket League replays are typically
+stored in `%USERPROFILE%\Documents\My Games\TAGame\Demos` on Windows.
 
+Open PowerShell in the folder containing `nimboxcars.exe`, then run it with the
+path to your replay. Keep the path in quotes if it contains spaces:
+
+```powershell
+.\nimboxcars.exe "C:\path\to\match.replay"
+```
+
+To include decoded network frames and output JSON:
+
+```powershell
+.\nimboxcars.exe --netdata:all --json "C:\path\to\match.replay"
+```
 
 ## Goals
 A lib written in Nim that parses entire replay files into Nim objects.
@@ -80,10 +88,11 @@ or absolute tolerance); other values must match exactly.
 He has graciously made a repository that documents Rocket League's replay format. [Check it out!](https://github.com/tanrbobanr/rocket-league-replay-format)
 
 ## GitHub User: jjbolt
-For being responsible for inital reverse engineering efforts of Rocket League's replay file. [The original thread on Psyonix Fourms](https://web.archive.org/web/20190501232510/https://psyonix.com/forum/viewtopic.php?f=33&t=13656)
+For being responsible for inital reverse engineering efforts of Rocket League's replay file and contacting with me about the project on occasion. [The original thread on Psyonix Fourms](https://web.archive.org/web/20190501232510/https://psyonix.com/forum/viewtopic.php?f=33&t=13656)
 
 ## and nameless others...
 All who put in much work into reverse engineering replay files. Opening up to modern day RL tools; analysis; ballchasing; Boxcars; etc. From their hard work of the past I get to focus on design of this project. 
 
 ___
 ### FOOTNOTES:
+n/a
