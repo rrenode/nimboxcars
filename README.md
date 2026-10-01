@@ -11,6 +11,7 @@ NimBoxCars is a [Rocket League](http://www.rocketleaguegame.com/) replay parser 
 - [ ] C bindings
 - [ ] Online Docs
 - [ ] Convenience Tool for quick visualization of info (such as players, team names, etc.)
+- [ ] Get this jawn listed on Nimble
 
 ## Tool Usage
 
