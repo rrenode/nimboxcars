@@ -7,6 +7,11 @@
 # NimBoxCars
 NimBoxCars is a [Rocket League](http://www.rocketleaguegame.com/) replay parser library and tool written in Nim.
 
+## ToDos
+- [ ] C bindings
+- [ ] Online Docs
+- [ ] Convenience Tool for quick visualization of info (such as players, team names, etc.)
+
 ## Tool Usage
 
 Download the binary from the releases page. Rocket League replays are typically
