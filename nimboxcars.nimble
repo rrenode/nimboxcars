@@ -13,3 +13,7 @@ bin = @["nimboxcars"]
 requires "nim >= 2.2.6"
 
 requires "json_serialization >= 0.4.4"
+
+task build, "Builds debug version of nimboxcars":
+    echo "Build debug..."
+    exec "nim c --out:bin/debug/nimboxcars.exe src/nimboxcars.nim"
