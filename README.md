@@ -93,7 +93,7 @@ or absolute tolerance); other values must match exactly.
 ## GitHub User: tanrbobanr
 He has graciously made a repository that documents Rocket League's replay format. [Check it out!](https://github.com/tanrbobanr/rocket-league-replay-format)
 
-## GitHub User: jjbolt
+## GitHub User: jjbott
 For being responsible for inital reverse engineering efforts of Rocket League's replay file and contacting with me about the project on occasion. [The original thread on Psyonix Fourms](https://web.archive.org/web/20190501232510/https://psyonix.com/forum/viewtopic.php?f=33&t=13656)
 
 ## and nameless others...
